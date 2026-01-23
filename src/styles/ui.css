@@ -1,0 +1,192 @@
+/* container */
+.container {
+  padding: 18px;
+}
+
+/* headings */
+.page-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+}
+.center { text-align: center; }
+
+.page-subtitle {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+/* card */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+/* buttons */
+.btn {
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: var(--primaryText);
+  border-color: var(--primary);
+}
+
+.btn-ghost {
+  background: transparent;
+}
+
+/* inputs */
+.input {
+  height: 38px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  padding: 0 10px;
+  font-size: 14px;
+  background: var(--surface);
+}
+
+/* alert */
+.alert-error {
+  background: var(--dangerBg);
+  border: 1px solid var(--dangerBorder);
+  color: var(--dangerText);
+  border-radius: var(--radius);
+  padding: 12px;
+}
+
+.table-wrap {
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.table th {
+  position: sticky;
+  top: 0;
+  background: #1f2a44;
+  color: #fff;
+  text-align: left;
+  padding: 10px;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.table tr:nth-child(even) {
+  background: rgba(15, 23, 42, 0.03);
+}
+
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  overflow: hidden;
+  background: #f6f7fb;
+}
+
+.app-sidebar {
+  height: 100vh;
+  background: #f9fafb;
+  border-right: 1px solid #e6e6e6;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-brand {
+  padding: 16px;
+  border-bottom: 1px solid #e6e6e6;
+}
+
+.app-brand-title {
+  font-weight: 800;
+  font-size: 16px;
+}
+
+.app-brand-sub {
+  margin-top: 4px;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.app-menu {
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.menu-card {
+  text-decoration: none;
+  color: #111;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #e6e6e6;
+  background: #ffffff;
+  font-size: 14px;
+}
+
+.menu-card:hover {
+  background: #f3f4f8;
+}
+
+.menu-card.active {
+  background: #eef1ff;
+  border-color: #d9dfff;
+  font-weight: 700;
+}
+
+.app-sidebar-footer {
+  margin-top: auto;
+  padding: 12px;
+  border-top: 1px solid #e6e6e6;
+}
+
+.logout-btn {
+  width: 100%;
+  height: 38px;
+  border-radius: 10px;
+  border: none;
+  background: #111;
+  color: #fff;
+  cursor: pointer;
+}
+.app-main {
+  min-height: 100vh;
+  background: var(--contentBg);
+  padding: 18px;
+}

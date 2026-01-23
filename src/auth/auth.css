@@ -1,0 +1,99 @@
+/* auth.css (shared for Login + ChangePassword) */
+
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: var(--bg);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 18px;
+  display: grid;
+  gap: 12px;
+}
+
+.auth-form {
+  display: grid;
+  gap: 12px;
+}
+
+.auth-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.auth-subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.auth-label {
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+}
+
+/* input with internal button */
+.auth-input-wrap {
+  position: relative;
+}
+
+.auth-input {
+  width: 100%;
+  padding-right: 58px;
+}
+
+.auth-input-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+
+  height: 28px;
+  padding: 0 10px;
+
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.auth-input-btn:hover {
+  background: rgba(15, 23, 42, 0.04);
+}
+
+.auth-input-btn:active {
+  transform: translateY(-50%) translateY(1px);
+}
+
+.auth-hint {
+  margin-top: -4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.auth-submit {
+  height: 40px;
+  border-radius: 10px;
+}
+
+.alert-error {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.auth-footer {
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+}
