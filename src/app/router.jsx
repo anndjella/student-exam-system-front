@@ -4,14 +4,24 @@ import { LoginPage } from "../auth/LoginPage";
 import { ProtectedRoute } from "../auth/ProtectedRoute";
 import { HomeRedirect } from "./HomeRedirect";
 import { ChangePasswordPage } from "../auth/ChangePasswordPage";
+import { RequireRole } from "../auth/RequireRole";
 
-import { MePage } from "../features/me/pages/MePage";
+
+import { MePage } from "../features/shared/pages/MePage";
 import { StudentLayout } from "../features/student/layout/StudentLayout";
 import { StudServiceLayout } from "../features/student-service/layout/StudServiceLayout";
 import { TeacherLayout } from "../features/teacher/layout/TeacherLayout";
 import { StudentSubjectsPage } from "../features/student/pages/StudentSubjectsPage";
-// import { St } from "../features/student/pages/StudentExamsPage";
+import { StudentExamsPage } from "../features/student/pages/StudentExamsPage";
 import {HomePage} from "../features/home/HomePage"
+import {StudentServiceSubjectsPage} from "../features/student-service/pages/StudServiceSubjectsPage"
+import {StudentRegistrationsPage} from "../features/student/pages/StudentRegistrationsPage"
+import { TeacherSubjectsPage } from "../features/teacher/pages/TeacherSubjectsPage";
+import {TermsPage} from "../features/shared/pages/TermsPage"
+import { SSStudentsPage } from "../features/student-service/pages/StudentsPage";
+import { TeacherStudentsPage } from "../features/teacher/pages/StudentsPage";
+import { TeachersPage } from "../features/student-service/pages/TeachersPage";
+import { EnrollmentsPage } from "../features/student-service/pages/EnrollmentsPage";
 
 export const router = createBrowserRouter([
   { path: "/login", element: <LoginPage /> },
@@ -33,44 +43,70 @@ export const router = createBrowserRouter([
     ),
   },
 
-  {
+   {
     path: "/student",
     element: (
       <ProtectedRoute>
-        <StudentLayout />
+        <RequireRole allowed={["Student"]} />
       </ProtectedRoute>
     ),
     children: [
-      { index: true, element: <Navigate to="home" replace /> },
-    { path: "home", element: <HomePage /> },
-    { path: "subjects", element: <StudentSubjectsPage /> },
-     { path: "me", element: <MePage /> },
+      {
+        element: <StudentLayout />,
+        children: [
+          { index: true, element: <Navigate to="home" replace /> },
+          { path: "home", element: <HomePage /> },
+          { path: "terms", element: <TermsPage /> },
+          { path: "exams", element: <StudentExamsPage /> },
+          { path: "subjects", element: <StudentSubjectsPage /> },
+          { path: "registrations", element: <StudentRegistrationsPage /> },
+         { path: "me", element: <MePage /> },
+        ],
+      },
     ],
   },
-  {
+   {
     path: "/teacher",
-   element: (
+    element: (
       <ProtectedRoute>
-        <TeacherLayout />
+        <RequireRole allowed={["Teacher"]} />
       </ProtectedRoute>
     ),
     children: [
-      { index: true, element: <Navigate to="home" replace /> },
-    { path: "home", element: <HomePage /> },
-     { path: "me", element: <MePage /> },
+      {
+        element: <TeacherLayout />,
+        children: [
+          { index: true, element: <Navigate to="home" replace /> },
+          { path: "home", element: <HomePage /> },
+          { path: "terms", element: <TermsPage /> },
+          { path: "students", element: <TeacherStudentsPage /> },
+          { path: "subjects", element: <TeacherSubjectsPage /> },        
+         { path: "me", element: <MePage /> },
+        ],
+      },
     ],
   },
   {
     path: "/ss",
     element: (
       <ProtectedRoute>
-        <StudServiceLayout />
+        <RequireRole allowed={["StudentService"]} />
       </ProtectedRoute>
     ),
     children: [
-      { index: true, element: <Navigate to="home" replace /> },
-    { path: "home", element: <HomePage /> },
-     { path: "me", element: <MePage /> },
+      {
+        element: <StudServiceLayout />,
+        children: [
+          { index: true, element: <Navigate to="home" replace /> },
+          { path: "home", element: <HomePage /> },
+          { path: "students", element: <SSStudentsPage /> },
+          { path: "teachers", element: <TeachersPage /> },
+          { path: "enrollments", element: <EnrollmentsPage /> },
+          { path: "terms", element: <TermsPage /> },
+          { path: "subjects", element: <StudentServiceSubjectsPage /> },
+         { path: "me", element: <MePage /> },
+        ],
+      },
     ],
-  }
+  },
 ]);

@@ -1,17 +1,23 @@
 const API_BASE_URL = "http://localhost:5000";
 
-async function extractErrorMessage(res) {
-  let fallback = `Request failed (${res.status})`;
+async function extractError(res) {
+  const fallback = `Request failed (${res.status})`;
+  const ct = res.headers.get("content-type") || "";
 
   try {
-    const ct = res.headers.get("content-type") || "";
+    if (ct.includes("json")) {
+      const body = await res.json();
 
-    if (ct.includes("application/problem+json") || ct.includes("application/json")) {
-      const obj = await res.json();
-      return obj.detail || obj.Detail || obj.title || obj.Title || fallback;
+      if (body?.errors) {
+        return Object.entries(body.errors)
+          .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(", ") : v}`)
+          .join("\n");
+      }
+
+      return body.detail || body.title || body.message || fallback;
     }
 
-    const text = await res.text().catch(() => "");
+    const text = await res.text();
     return text || fallback;
   } catch {
     return fallback;
@@ -29,8 +35,7 @@ export async function apiFetchJson(path, options = {}, token) {
   });
 
   if (!res.ok) {
-    const msg = await extractErrorMessage(res);
-    throw new Error(msg);
+    throw new Error(await extractError(res));
   }
 
   if (res.status === 204) return null;
@@ -48,8 +53,7 @@ export async function apiFetchText(path, options = {}, token) {
   });
 
   if (!res.ok) {
-    const msg = await extractErrorMessage(res);
-    throw new Error(msg);
+    throw new Error(await extractError(res));
   }
 
   return await res.text();

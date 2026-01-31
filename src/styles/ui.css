@@ -130,7 +130,13 @@
 
 .app-brand {
   padding: 16px;
-  border-bottom: 1px solid #e6e6e6;
+  border-bottom: 1px solid var(--border);
+}
+.app-brand-user {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .app-brand-title {
@@ -139,9 +145,16 @@
 }
 
 .app-brand-sub {
-  margin-top: 4px;
+  /* margin-top: 4px;
   font-size: 12px;
-  opacity: 0.7;
+  opacity: 0.7; */
+
+    font-size: 14px;
+  color: #666;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
 }
 
 .app-menu {
@@ -170,13 +183,32 @@
   font-weight: 700;
 }
 
-.app-sidebar-footer {
+/* .app-sidebar-footer {
   margin-top: auto;
   padding: 12px;
   border-top: 1px solid #e6e6e6;
+} */
+
+.app-sidebar {
+  height: 100vh;
+  position: sticky;
+  top: 0;
+
+  display: flex;
+  flex-direction: column;
 }
 
-.logout-btn {
+.app-sidebar-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  padding: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  background: inherit;
+}
+
+
+/* .logout-btn {
   width: 100%;
   height: 38px;
   border-radius: 10px;
@@ -184,9 +216,127 @@
   background: #111;
   color: #fff;
   cursor: pointer;
+} */
+
+.logout-btn--small {
+  width: auto;
+  height: 28px;
+  padding: 0 10px;
+
+  font-size: 12px;
+  border-radius: 8px;
+
+  background: transparent;
+  color: #111;
+  border: 1px solid #ddd;
+}
+
+.logout-btn--small:hover {
+  background: #111;
+  color: #fff;
 }
 .app-main {
   min-height: 100vh;
   background: var(--contentBg);
   padding: 18px;
+}
+
+/* Teacher grade entry row states */
+.row-has-exam td {
+  opacity: 0.75;
+}
+
+.row-has-exam input.input {
+  background: rgba(15, 23, 42, 0.03);
+}
+
+.row-editing td {
+  opacity: 1;
+}
+
+.row-editing input.input {
+  background: var(--surface);
+}
+
+.row-locked td {
+  opacity: 0.55;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+/* for tables  */
+.table th,
+.table td {
+  vertical-align: middle;
+}
+
+.table th:nth-child(2),
+.table td:nth-child(2),
+.table th:nth-child(4),
+.table td:nth-child(4) {
+  border-left: 2px solid rgba(255, 255, 255, 0.18);
+}
+
+.table tbody td:nth-child(2),
+.table tbody td:nth-child(4),
+.table tbody td:nth-child(6) {
+  border-left: 2px solid var(--border);
+}
+
+.table th:nth-child(3),
+.table td:nth-child(3),
+.table th:nth-child(5),
+.table td:nth-child(5),
+.table th:nth-child(7),
+.table td:nth-child(7) {
+  border-left: 1px solid var(--border);
+}
+
+.table thead th:nth-child(3),
+.table thead th:nth-child(5),
+.table thead th:nth-child(6), 
+.table thead th:nth-child(7){
+  border-left: 2px solid rgba(255, 255, 255, 0.18);
+}
+
+.table thead th {
+  text-align: center;
+}
+
+.table thead th:first-child {
+  text-align: left;
+}
+
+.table tbody td:nth-child(2),
+.table tbody td:nth-child(3),
+.table tbody td:nth-child(4),
+.table tbody td:nth-child(5) {
+  text-align: center;
+  white-space: nowrap;
+}
+.profile-table td {
+  text-align: left !important;
+}
+.table thead tr:nth-child(2) th {
+  background: #24314f;
+}
+
+.table tbody td:first-child {
+  font-weight: 700;
+}
+.table td .btn {
+  height: 24px;
+  padding: 0 12px;
+  line-height: 1px;
 }

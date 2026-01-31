@@ -44,7 +44,7 @@ export function MePage() {
       {!loading && !error && me && (
         <div className="card" style={{ padding: 12 }}>
           <div className="table-wrap">
-            <table className="table">
+            <table className="table profile-table" >
               <tbody>
                 <tr>
                   <th style={{ width: 220 }}>First name</th>

@@ -14,20 +14,46 @@ export function StudentLayout() {
   return (
     <div className="app-shell">
       <aside className="app-sidebar">
-        <div className="app-brand">
-          <div className="app-brand-title">Student Portal</div>
-          <div className="app-brand-sub">{payload?.uname}</div>
+       <div className="app-brand">
+          <div className="app-brand-title">Teacher Portal</div>
+
+          <div className="app-brand-user">
+            <span className="app-brand-sub">{payload?.uname}</span>
+
+            <button
+              className="logout-btn logout-btn--small"
+              onClick={handleLogout}
+              title="Logout"
+            >
+              Logout
+            </button>
+          </div>
         </div>
 
         <nav className="app-menu">
             <NavLink to="/student/home" className={({isActive}) => "menu-card" + (isActive ? " active" : "")}>
              Home
             </NavLink>
+
+            <NavLink
+            to="/student/terms"
+             className={({ isActive }) => "menu-card" + (isActive ? " active" : "")}
+              >
+                Terms
+              </NavLink>
+
           <NavLink
             to="/student/subjects"
             className={({ isActive }) => "menu-card" + (isActive ? " active" : "")}
           >
             My Subjects
+          </NavLink>
+
+          <NavLink
+            to="/student/registrations"
+            className={({ isActive }) => "menu-card" + (isActive ? " active" : "")}
+          >
+            My Registrations
           </NavLink>
 
           <NavLink
@@ -44,12 +70,6 @@ export function StudentLayout() {
           </NavLink>
           
         </nav>
-
-        <div className="app-sidebar-footer">
-          <button className="logout-btn" onClick={handleLogout}>
-            Logout
-          </button>
-        </div>
       </aside>
 
       <main className="app-main">
