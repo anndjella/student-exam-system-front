@@ -15,7 +15,7 @@ export function StudServiceLayout() {
     <div className="app-shell">
       <aside className="app-sidebar">
        <div className="app-brand">
-          <div className="app-brand-title">Teacher Portal</div>
+          <div className="app-brand-title">Student service Portal</div>
 
           <div className="app-brand-user">
             <span className="app-brand-sub">{payload?.uname}</span>
@@ -55,9 +55,30 @@ export function StudServiceLayout() {
               Enrollments
             </NavLink>
 
+             <NavLink
+              to="/ss/registrations"
+              className={({ isActive }) => "menu-card" + (isActive ? " active" : "")}
+            >
+              Registrations
+            </NavLink>
+
+            <NavLink
+              to="/ss/exams"
+              className={({ isActive }) => "menu-card" + (isActive ? " active" : "")}
+            >
+              Exams
+            </NavLink>
+
             <NavLink to="/ss/terms" className={({isActive}) => "menu-card" + (isActive ? " active" : "")}>
              Terms
             </NavLink>
+
+            <NavLink
+            to="/ss/subjects"
+            className={({ isActive }) => "menu-card" + (isActive ? " active" : "")}
+          >
+            Subjects
+          </NavLink>
 
           <NavLink
             to="/ss/me"
@@ -65,12 +86,7 @@ export function StudServiceLayout() {
           >
             My profile
           </NavLink>
-          <NavLink
-            to="/ss/subjects"
-            className={({ isActive }) => "menu-card" + (isActive ? " active" : "")}
-          >
-            Subjects
-          </NavLink>
+
           
         </nav>      
       </aside>

@@ -1,19 +1,14 @@
 import { useMemo, useState } from "react";
 import { useStudentExams } from "../hooks/useStudentExams";
-import { useMe } from "../../shared/hooks/useMe"; // adjust path if needed
+import { useMe } from "../../shared/hooks/useMe";
+import { formatDate } from "../../../utils/datetime";
 
-function formatDate(value) {
-  if (!value) return "-";
-  const iso = String(value).slice(0, 10);
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+function formatGrade(value) {
+  if (value === null || value === undefined) {
+    return "N.I."; 
+  }
+  return value;
 }
-
 function formatGpa(value) {
   if (value === null || value === undefined) return "-";
   const num = Number(value);
@@ -35,14 +30,14 @@ function ExamsTable({ items, emptyText }) {
       <table className="table">
         <thead>
           <tr>
-            <th>#</th>
-            <th>Code</th>
+            <th style={{ width: 50 }}>No</th>
+            <th style={{ width: 80 }}>Code</th>
             <th>Subject</th>
-            <th>ECTS</th>
+            <th style={{ width: 80 }}>ECTS</th>
             <th>Term</th>
             <th>Date</th>
             <th>Teacher</th>
-            <th>Grade</th>
+            <th style={{ width: 80 }}>Grade</th>
             <th>Note</th>
           </tr>
         </thead>
@@ -56,7 +51,7 @@ function ExamsTable({ items, emptyText }) {
               <td>{x.termName ?? x.TermName ?? "-"}</td>
               <td className="mono">{formatDate(x.date ?? x.Date)}</td>
               <td>{x.teacherName ?? x.TeacherName ?? "-"}</td>
-              <td className="mono">{(x.grade ?? x.Grade) ?? "-"}</td>
+              <td className="mono">{formatGrade(x.grade ?? x.Grade)}</td>
               <td>{(x.note ?? x.Note) || "-"}</td>
             </tr>
           ))}
@@ -104,7 +99,6 @@ export function StudentExamsPage() {
   const activeEmptyText =
     tab === "passed" ? "No passed exams yet." : "No failed exams.";
 
-  // Support both camelCase and PascalCase
   const gpa = me?.gpa ?? me?.GPA;
   const ectsCount = me?.ectsCount ?? me?.ECTSCount;
 

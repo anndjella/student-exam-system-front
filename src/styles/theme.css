@@ -14,6 +14,9 @@
   --dangerBorder: #ffc7c7;
   --dangerText: #7a1b1b;
 
+  --successBg: #e7f7ee;
+  --successBorder: #b9e6c6;
+  --successText: #0f5132;
   /* sizing */
   --radius: 10px;
   --shadow: 0 6px 18px rgba(0, 0, 0, 0.06);

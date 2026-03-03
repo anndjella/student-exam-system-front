@@ -74,37 +74,12 @@
   border-radius: var(--radius);
   padding: 12px;
 }
-
-.table-wrap {
-  overflow: auto;
-  border: 1px solid var(--border);
+.alert-success {
+  background: var(--successBg);
+  border: 1px solid var(--successBorder);
+  color: var(--successText);
   border-radius: var(--radius);
-  background: var(--surface);
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
-}
-
-.table th {
-  position: sticky;
-  top: 0;
-  background: #1f2a44;
-  color: #fff;
-  text-align: left;
-  padding: 10px;
-  white-space: nowrap;
-}
-
-.table td {
-  padding: 10px;
-  border-top: 1px solid var(--border);
-}
-
-.table tr:nth-child(even) {
-  background: rgba(15, 23, 42, 0.03);
+  padding: 12px;
 }
 
 
@@ -276,9 +251,43 @@
 }
 
 /* for tables  */
+.table-wrap {
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  table-layout: auto;
+}
+
+.table th {
+  position: sticky;
+  top: 0;
+  background: #1f2a44;
+  color: #fff;
+  text-align: left;
+  padding: 10px;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.table tr:nth-child(even) {
+  background: rgba(15, 23, 42, 0.03);
+}
+
 .table th,
 .table td {
   vertical-align: middle;
+  overflow: hidden;
 }
 
 .table th:nth-child(2),
@@ -294,21 +303,17 @@
   border-left: 2px solid var(--border);
 }
 
-.table th:nth-child(3),
-.table td:nth-child(3),
-.table th:nth-child(5),
-.table td:nth-child(5),
-.table th:nth-child(7),
-.table td:nth-child(7) {
+.table th + th,
+.table td + td {
   border-left: 1px solid var(--border);
 }
-
-.table thead th:nth-child(3),
-.table thead th:nth-child(5),
-.table thead th:nth-child(6), 
-.table thead th:nth-child(7){
+.table thead th + th {
   border-left: 2px solid rgba(255, 255, 255, 0.18);
 }
+
+/* .table td th:first-child{
+  text-align: left  ;
+} */
 
 .table thead th {
   text-align: center;
@@ -323,7 +328,7 @@
 .table tbody td:nth-child(4),
 .table tbody td:nth-child(5) {
   text-align: center;
-  white-space: nowrap;
+  /* white-space: nowrap; */
 }
 .profile-table td {
   text-align: left !important;
@@ -339,4 +344,8 @@
   height: 24px;
   padding: 0 12px;
   line-height: 1px;
+}
+.table td .input {
+  width: 100%;
+  min-width: 0;
 }

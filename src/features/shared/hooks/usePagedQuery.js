@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-export function usePagedQuery(fetchPage, { take = 20 } = {}) {
+export function usePagedQuery(fetchPage, { take: initialTake = 20 } = {}) {
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
 
@@ -8,43 +8,43 @@ export function usePagedQuery(fetchPage, { take = 20 } = {}) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const [take, setTake] = useState(initialTake);
+  const [skip, setSkip] = useState(0);
+
   const reqIdRef = useRef(0);
   const mountedRef = useRef(false);
   const loadingRef = useRef(false);
 
-  const canLoadMore = useMemo(() => items.length < total, [items.length, total]);
+  const page = useMemo(() => Math.floor(skip / take) + 1, [skip, take]);
+  const pageCount = useMemo(() => Math.max(1, Math.ceil(total / take)), [total, take]);
+
+  const canPrev = useMemo(() => skip > 0, [skip]);
+  const canNext = useMemo(() => skip + take < total, [skip, take, total]);
 
   const run = useCallback(
-    async ({ skip }) => {
+    async (nextSkip) => {
       if (loadingRef.current) return;
       loadingRef.current = true;
 
       const reqId = ++reqIdRef.current;
-
       setLoading(true);
       setError("");
 
       try {
-        const res = await fetchPage({ skip, take, query: query.trim() });
+        const res = await fetchPage({ skip: nextSkip, take, query: query.trim() });
 
         if (reqId !== reqIdRef.current) return;
 
         const list = Array.isArray(res?.items) ? res.items : [];
         const tot = typeof res?.total === "number" ? res.total : list.length;
 
-        if (skip === 0) {
-          setItems(list);
-        } else {
-          setItems((prev) => [...prev, ...list]);
-        }
-
+        setItems(list);
         setTotal(tot);
+        setSkip(nextSkip);
       } catch (e) {
         if (reqId !== reqIdRef.current) return;
-        if (skip === 0) {
-          setItems([]);
-          setTotal(0);
-        }
+        setItems([]);
+        setTotal(0);
         setError(e?.message ?? "Failed to load.");
       } finally {
         if (reqId === reqIdRef.current) setLoading(false);
@@ -55,13 +55,18 @@ export function usePagedQuery(fetchPage, { take = 20 } = {}) {
   );
 
   const reload = useCallback(async () => {
-    await run({ skip: 0 });
+    await run(0);
   }, [run]);
 
-  const loadMore = useCallback(async () => {
-    if (!canLoadMore) return;
-    await run({ skip: items.length });
-  }, [run, canLoadMore, items.length]);
+  const goPrev = useCallback(async () => {
+    if (!canPrev) return;
+    await run(Math.max(0, skip - take));
+  }, [canPrev, run, skip, take]);
+
+  const goNext = useCallback(async () => {
+    if (!canNext) return;
+    await run(skip + take);
+  }, [canNext, run, skip, take]);
 
   useEffect(() => {
     if (mountedRef.current) return;
@@ -71,8 +76,18 @@ export function usePagedQuery(fetchPage, { take = 20 } = {}) {
 
   useEffect(() => {
     if (!mountedRef.current) return;
-    reload();
-  }, [query, reload]);
+    run(0);
+  }, [query, run]);
+
+  useEffect(() => {
+    if (!mountedRef.current) return;
+    run(0);
+  }, [take, run]);
+
+  useEffect(() => {
+    if (!mountedRef.current) return;
+    run(0);
+  }, [run]);
 
   return {
     items,
@@ -82,8 +97,16 @@ export function usePagedQuery(fetchPage, { take = 20 } = {}) {
     loading,
     error,
     reload,
-    loadMore,
-    canLoadMore,
+
     take,
+    setTake,
+    skip,
+
+    page,
+    pageCount,
+    canPrev,
+    canNext,
+    goPrev,
+    goNext,
   };
 }

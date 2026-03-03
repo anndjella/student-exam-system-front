@@ -119,12 +119,21 @@ export function TermsPage() {
       {!loading && !error && terms.length > 0 && (
         <div className="table-wrap">
           <table className="table">
+            <colgroup>
+              <col /> {/* Term */}
+              <col /> {/* Registration Start */}
+              <col /> {/* Registration End */}
+              <col /> {/* Duration Start */}
+              <col /> {/* Duration End */}
+              {isStudentService && <col style={{ width: 130 }} />} {/* Actions */}
+            </colgroup>
+
             <thead>
               <tr>
                 <th rowSpan={2}>Term</th>
                 <th colSpan={2}>Registration</th>
                 <th colSpan={2}>Duration</th>
-                {isStudentService && <th rowSpan={2} />}
+                {isStudentService && <th rowSpan={2} style={{ textAlign: "center" }}>Actions</th>}
               </tr>
               <tr>
                 <th>Start</th>
@@ -148,7 +157,7 @@ export function TermsPage() {
                     <td className="mono">{formatDate(getTermEnd(term))}</td>
 
                     {isStudentService && (
-                      <td>
+                      <td style={{ textAlign: "center", whiteSpace: "nowrap" }}>
                         <button
                           className="btn btn-ghost"
                           onClick={() => handleDelete(id)}

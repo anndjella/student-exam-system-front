@@ -14,7 +14,7 @@ import { TeacherLayout } from "../features/teacher/layout/TeacherLayout";
 import { StudentSubjectsPage } from "../features/student/pages/StudentSubjectsPage";
 import { StudentExamsPage } from "../features/student/pages/StudentExamsPage";
 import {HomePage} from "../features/home/HomePage"
-import {StudentServiceSubjectsPage} from "../features/student-service/pages/StudServiceSubjectsPage"
+import {StudentServiceSubjectsPage} from "../features/student-service/pages/SubjectsPage"
 import {StudentRegistrationsPage} from "../features/student/pages/StudentRegistrationsPage"
 import { TeacherSubjectsPage } from "../features/teacher/pages/TeacherSubjectsPage";
 import {TermsPage} from "../features/shared/pages/TermsPage"
@@ -22,6 +22,8 @@ import { SSStudentsPage } from "../features/student-service/pages/StudentsPage";
 import { TeacherStudentsPage } from "../features/teacher/pages/StudentsPage";
 import { TeachersPage } from "../features/student-service/pages/TeachersPage";
 import { EnrollmentsPage } from "../features/student-service/pages/EnrollmentsPage";
+import { ExamsPage} from "../features/student-service/pages/ExamsPage";
+import { RegistrationsPage} from "../features/student-service/pages/RegistrationsPage";
 
 export const router = createBrowserRouter([
   { path: "/login", element: <LoginPage /> },
@@ -102,6 +104,8 @@ export const router = createBrowserRouter([
           { path: "students", element: <SSStudentsPage /> },
           { path: "teachers", element: <TeachersPage /> },
           { path: "enrollments", element: <EnrollmentsPage /> },
+          { path: "registrations", element: <RegistrationsPage /> },
+          { path: "exams", element: <ExamsPage /> },
           { path: "terms", element: <TermsPage /> },
           { path: "subjects", element: <StudentServiceSubjectsPage /> },
          { path: "me", element: <MePage /> },

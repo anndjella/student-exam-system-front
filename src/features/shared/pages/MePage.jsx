@@ -1,4 +1,5 @@
 import { useMe } from "../hooks/useMe";
+import { formatDate } from "../../../utils/datetime";
 
 function titleToText(title) {
   switch (title) {
@@ -13,11 +14,6 @@ function titleToText(title) {
     default:
       return "-";
   }
-}
-
-function formatDate(iso) {
-  if (!iso) return "-";
-  return String(iso).slice(0, 10);
 }
 
 export function MePage() {

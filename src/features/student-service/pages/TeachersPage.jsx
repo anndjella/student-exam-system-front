@@ -1,13 +1,9 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useAuth } from "../../../auth/AuthContext";
 import { Modal } from "../../shared/components/Modal";
 import { usePagedQuery } from "../../shared/hooks/usePagedQuery";
-import {
-  listTeachers,
-  createTeacher,
-  updateTeacher,
-  deleteTeacher,
-} from "../api/teachersSSApi";
+import { listTeachers, createTeacher, updateTeacher, deleteTeacher } from "../api/teachersSSApi";
+import {formatDate,formatDateTime} from "../../../utils/datetime";
 
 const TITLE_OPTIONS = [
   { value: 1, label: "Assistant professor" },
@@ -27,7 +23,8 @@ function lastNameOf(x) {
   return x?.lastName ?? x?.LastName ?? "";
 }
 function fullNameOf(x) {
-  return `${firstNameOf(x)} ${lastNameOf(x)}`.trim();
+  const n = `${firstNameOf(x)} ${lastNameOf(x)}`.trim();
+  return n || "";
 }
 function employeeNumOf(x) {
   return x?.employeeNumber ?? x?.EmployeeNumber ?? "";
@@ -48,16 +45,33 @@ function titleLabelOf(x) {
 function dobOf(x) {
   return x?.dateOfBirth ?? x?.DateOfBirth ?? null;
 }
-function fmtDate(v) {
-  if (!v) return "-";
-  return String(v).substring(0, 10); // YYYY-MM-DD
+function deletedAtOf(x) {
+  return x?.deletedAt ?? x?.DeletedAt ?? null;
 }
 
-export function TeachersPage() {
+function clamp(n, min, max) {
+  return Math.max(min, Math.min(max, n));
+}
+
+export function TeachersPage({
+  title = "Teachers",
+  showDeletedTabs = true,
+  allowCreate = true,
+}) {
   const { token, role } = useAuth();
   const isStudentService = role === "StudentService";
 
-  const fetcher = useCallback((args) => listTeachers(args, token), [token]);
+  const [tab, setTab] = useState("active"); // active | deleted
+  const onlyDeleted = showDeletedTabs && tab === "deleted";
+
+  const effectiveAllowCreate = allowCreate && !onlyDeleted;
+  const effectiveReadOnly = onlyDeleted;
+
+  const fetcher = useCallback(
+    (args) => listTeachers({ ...args, onlyDeleted }, token),
+    [token, onlyDeleted]
+  );
+
   const {
     items,
     total,
@@ -66,9 +80,17 @@ export function TeachersPage() {
     loading,
     error,
     reload,
-    loadMore,
-    canLoadMore,
+
     take,
+    setTake,
+    skip,
+
+    page,
+    pageCount,
+    canPrev,
+    canNext,
+    goPrev,
+    goNext,
   } = usePagedQuery(fetcher, { take: 20 });
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -83,10 +105,17 @@ export function TeachersPage() {
     firstName: "",
     lastName: "",
     employeeNumber: "",
-    title: "", // required
+    title: "",
   });
 
+  const showingFrom = useMemo(() => (total === 0 ? 0 : skip + 1), [skip, total]);
+  const showingTo = useMemo(() => clamp(skip + items.length, 0, total), [skip, items.length, total]);
+
+  const tableColSpan = (effectiveReadOnly ? 6 : 6) + (onlyDeleted ? 1 : 0);
+
   function openCreate() {
+    if (effectiveReadOnly || !effectiveAllowCreate) return;
+
     setMode("create");
     setEditing(null);
     setFormError("");
@@ -101,11 +130,13 @@ export function TeachersPage() {
   }
 
   function openEdit(t) {
+    if (effectiveReadOnly) return;
+
     setMode("edit");
     setEditing(t);
     setFormError("");
     setForm({
-      jmbg: "", // do not edit JMBG
+      jmbg: "",
       firstName: firstNameOf(t),
       lastName: lastNameOf(t),
       employeeNumber: employeeNumOf(t),
@@ -123,16 +154,14 @@ export function TeachersPage() {
 
   async function onSubmit(e) {
     e.preventDefault();
-    if (!token) return;
+    if (effectiveReadOnly || !token) return;
 
     setSaving(true);
     setFormError("");
 
     try {
       const titleVal = Number(form.title);
-      if (!Number.isFinite(titleVal)) {
-        throw new Error("Title is required.");
-      }
+      if (!Number.isFinite(titleVal)) throw new Error("Title is required.");
 
       if (mode === "create") {
         await createTeacher(
@@ -171,7 +200,7 @@ export function TeachersPage() {
   }
 
   async function onDelete(t) {
-    if (!token) return;
+    if (effectiveReadOnly || !token) return;
     if (!window.confirm("Soft delete this teacher?")) return;
 
     try {
@@ -194,13 +223,58 @@ export function TeachersPage() {
     <div className="container">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Teachers</h1>
-          <div className="page-subtitle">Batch loading and search.</div>
+          <h1 className="page-title">{title}</h1>
+          <div className="page-subtitle">
+            {showDeletedTabs ? "Active and soft deleted teachers." : "Search and paging."}
+          </div>
         </div>
-        <button className="btn" onClick={reload} disabled={loading}>
-          Refresh
-        </button>
+
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <button className="btn" onClick={reload} disabled={loading}>
+            Refresh
+          </button>
+
+          {!effectiveReadOnly && effectiveAllowCreate && (
+            <button className="btn btn-primary" onClick={openCreate} disabled={loading}>
+              Add teacher
+            </button>
+          )}
+        </div>
       </div>
+
+      {showDeletedTabs && (
+        <div className="card" style={{ padding: 12, marginBottom: 12 }}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <button
+              type="button"
+              className={"btn" + (tab === "active" ? " btn-primary" : "")}
+              onClick={() => setTab("active")}
+              disabled={loading}
+            >
+              Active
+            </button>
+
+            <button
+              type="button"
+              className={"btn" + (tab === "deleted" ? " btn-primary" : "")}
+              onClick={() => setTab("deleted")}
+              disabled={loading}
+            >
+              Deleted
+            </button>
+
+            {tab === "deleted" && (
+              <span className="badge" style={{ alignSelf: "center" }}>
+                Deleted view is read-only
+              </span>
+            )}
+          </div>
+
+          <div className="page-subtitle" style={{ marginTop: 8 }}>
+            {tab === "active" ? "Showing active teachers." : "Showing soft deleted teachers."}
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="alert-error" style={{ marginBottom: 12 }}>
@@ -209,23 +283,94 @@ export function TeachersPage() {
       )}
 
       <div className="card" style={{ padding: 12, marginBottom: 12 }}>
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <input
-            className="input"
-            style={{ width: 340 }}
-            placeholder="Search by name or employee number..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-          <div style={{ flex: 1 }} />
-          <button className="btn btn-primary" onClick={openCreate}>
-            Add teacher
-          </button>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ position: "relative", flex: "1 1 360px", minWidth: 260 }}>
+            <input
+              className="input"
+              style={{ width: "100%", paddingRight: 40 }}
+              placeholder={onlyDeleted ? "Search deleted teachers..." : "Search by name or employee number..."}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              disabled={loading}
+            />
+            {query && (
+              <button
+                type="button"
+                className="btn"
+                onClick={() => setQuery("")}
+                disabled={loading}
+                style={{
+                  position: "absolute",
+                  right: 6,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  padding: "6px 10px",
+                  lineHeight: 1,
+                }}
+                aria-label="Clear search"
+                title="Clear"
+              >
+                ×
+              </button>
+            )}
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              flex: "0 0 auto",
+              flexWrap: "wrap",
+              justifyContent: "flex-end",
+              marginLeft: "auto",
+            }}
+          >
+            <button className="btn" onClick={goPrev} disabled={!canPrev || loading}>
+              Prev
+            </button>
+            <button className="btn" onClick={goNext} disabled={!canNext || loading}>
+              Next
+            </button>
+
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "6px 10px",
+                borderRadius: 999,
+                border: "1px solid var(--border)",
+                background: "rgba(255,255,255,0.03)",
+              }}
+            >
+              <span style={{ whiteSpace: "nowrap" }}>Page size:</span>
+              <select
+                className="input"
+                style={{ width: 92, padding: "6px 8px" }}
+                value={take}
+                onChange={(e) => setTake(Number(e.target.value))}
+                disabled={loading}
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+              </select>
+            </div>
+          </div>
         </div>
 
         <div className="page-subtitle" style={{ marginTop: 8 }}>
-          Showing <span className="mono">{items.length}</span> of{" "}
-          <span className="mono">{total}</span>
+          Showing <span className="mono">{showingFrom}</span>-<span className="mono">{showingTo}</span> of{" "}
+          <span className="mono">{total}</span> (page <span className="mono">{page}</span>/
+          <span className="mono">{pageCount}</span>)
         </div>
       </div>
 
@@ -235,24 +380,32 @@ export function TeachersPage() {
             <thead>
               <tr>
                 <th style={{ width: 70, textAlign: "center" }}>No.</th>
-                <th>Name</th>
-                <th style={{ width: 160 }}>Date of birth</th>
-                <th style={{ width: 220 }}>Employee number</th>
-                <th style={{ width: 220 }}>Title</th>
-                <th style={{ width: 190 }}>Actions</th>
+                <th style={{ textAlign: "left" }}>Teacher</th>
+                <th style={{ width: 160, textAlign: "center" }}>Date of birth</th>
+                <th style={{ width: 220, textAlign: "center" }}>Employee number</th>
+
+                {onlyDeleted && (
+                  <th style={{ width: 190, textAlign: "center" }}>Deleted at</th>
+                )}
+
+                <th style={{ width: 240, textAlign: "center" }}>Title</th>
+
+                {!effectiveReadOnly && (
+                  <th style={{ width: 190, textAlign: "center" }}>Actions</th>
+                )}
               </tr>
             </thead>
 
             <tbody>
               {loading && items.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ padding: 10 }}>
+                  <td colSpan={tableColSpan} style={{ padding: 10 }}>
                     Loading...
                   </td>
                 </tr>
               ) : items.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ padding: 10 }}>
+                  <td colSpan={tableColSpan} style={{ padding: 10 }}>
                     No results.
                   </td>
                 </tr>
@@ -260,22 +413,39 @@ export function TeachersPage() {
                 items.map((t, i) => (
                   <tr key={idOf(t) ?? `${employeeNumOf(t)}-${i}`}>
                     <td className="mono" style={{ textAlign: "center" }}>
-                      {i + 1}
+                      {skip + i + 1}
                     </td>
-                    <td>{fullNameOf(t) || "-"}</td>
-                    <td className="mono">{fmtDate(dobOf(t))}</td>
-                    <td className="mono">{employeeNumOf(t) || "-"}</td>
-                    <td>{titleLabelOf(t)}</td>
-                    <td>
-                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                        <button className="btn" onClick={() => openEdit(t)}>
-                          Edit
-                        </button>
-                        <button className="btn" onClick={() => onDelete(t)}>
-                          Delete
-                        </button>
-                      </div>
+
+                    <td style={{ textAlign: "left" }}>{fullNameOf(t) || "-"}</td>
+
+                    <td className="mono" style={{ textAlign: "center", whiteSpace: "nowrap" }}>
+                      {formatDate(dobOf(t))}
                     </td>
+
+                    <td className="mono" style={{ textAlign: "center", whiteSpace: "nowrap" }}>
+                      {employeeNumOf(t) || "-"}
+                    </td>
+
+                    {onlyDeleted && (
+                      <td className="mono" style={{ textAlign: "center", whiteSpace: "nowrap" }}>
+                        {formatDateTime(deletedAtOf(t))}
+                      </td>
+                    )}
+
+                    <td style={{ textAlign: "center" }}>{titleLabelOf(t)}</td>
+
+                    {!effectiveReadOnly && (
+                      <td style={{ textAlign: "center" }}>
+                        <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
+                          <button className="btn" onClick={() => openEdit(t)}>
+                            Edit
+                          </button>
+                          <button className="btn" onClick={() => onDelete(t)}>
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))
               )}
@@ -289,79 +459,87 @@ export function TeachersPage() {
             display: "flex",
             gap: 10,
             alignItems: "center",
+            justifyContent: "flex-end",
             flexWrap: "wrap",
           }}
         >
-          <button className="btn" onClick={loadMore} disabled={loading || !canLoadMore}>
-            {loading ? "Loading..." : canLoadMore ? "Load more" : "No more"}
+          <button className="btn" onClick={goPrev} disabled={!canPrev || loading}>
+            Prev
           </button>
-          <span className="badge">Batch: {take}</span>
+          <button className="btn" onClick={goNext} disabled={!canNext || loading}>
+            Next
+          </button>
+          <span className="badge">
+            Page <span className="mono">{page}</span>/<span className="mono">{pageCount}</span>
+          </span>
         </div>
       </div>
 
-      <Modal
-        open={modalOpen}
-        title={mode === "create" ? "Create teacher" : "Edit teacher"}
-        onClose={closeModal}
-      >
-        <form onSubmit={onSubmit} style={{ display: "grid", gap: 10, maxWidth: 560 }}>
-          {mode === "create" && (
+      {!effectiveReadOnly && (
+        <Modal
+          open={modalOpen}
+          title={mode === "create" ? "Create teacher" : "Edit teacher"}
+          onClose={closeModal}
+        >
+          <form onSubmit={onSubmit} style={{ display: "grid", gap: 10, maxWidth: 560 }}>
+            {mode === "create" && (
+              <input
+                className="input"
+                placeholder="JMBG"
+                value={form.jmbg}
+                onChange={(e) => setForm((p) => ({ ...p, jmbg: e.target.value }))}
+                required
+              />
+            )}
+
             <input
               className="input"
-              placeholder="JMBG"
-              value={form.jmbg}
-              onChange={(e) => setForm((p) => ({ ...p, jmbg: e.target.value }))}
-              required
+              placeholder="First name"
+              value={form.firstName}
+              onChange={(e) => setForm((p) => ({ ...p, firstName: e.target.value }))}
+              required={mode === "create"}
             />
-          )}
 
-          <input
-            className="input"
-            placeholder="First name"
-            value={form.firstName}
-            onChange={(e) => setForm((p) => ({ ...p, firstName: e.target.value }))}
-            required={mode === "create"}
-          />
+            <input
+              className="input"
+              placeholder="Last name"
+              value={form.lastName}
+              onChange={(e) => setForm((p) => ({ ...p, lastName: e.target.value }))}
+              required={mode === "create"}
+            />
 
-          <input
-            className="input"
-            placeholder="Last name"
-            value={form.lastName}
-            onChange={(e) => setForm((p) => ({ ...p, lastName: e.target.value }))}
-            required={mode === "create"}
-          />
+            <input
+              className="input"
+              placeholder="Employee number (e.g. 2023/0007)"
+              value={form.employeeNumber}
+              onChange={(e) => setForm((p) => ({ ...p, employeeNumber: e.target.value }))}
+              required={mode === "create"}
+            />
 
-          <input
-            className="input"
-            placeholder="Employee number (e.g. 2023/0007)"
-            value={form.employeeNumber}
-            onChange={(e) => setForm((p) => ({ ...p, employeeNumber: e.target.value }))}
-            required={mode === "create"}
-          />
-
-          <select
-            className="input"
-            value={form.title}
-            onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
-            required
-          >
-            <option value="" disabled>
-              Select title...
-            </option>
-            {TITLE_OPTIONS.map((o) => (
-              <option key={o.value} value={String(o.value)}>
-                {o.label}
+            <select
+              className="input"
+              value={form.title}
+              onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
+              required
+            >
+              <option value="" disabled>
+                Select title...
               </option>
-            ))}
-          </select>
+              {TITLE_OPTIONS.map((o) => (
+                <option key={o.value} value={String(o.value)}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
 
-          <button className="btn btn-primary" disabled={saving}>
-            {saving ? "Saving..." : mode === "create" ? "Create" : "Save changes"}
-          </button>
+            <button className="btn btn-primary" disabled={saving}>
+              {saving ? "Saving..." : mode === "create" ? "Create" : "Save changes"}
+            </button>
 
-          {formError && <div className="alert-error">{formError}</div>}
-        </form>
-      </Modal>
+            {formError && <div className="alert-error">{formError}</div>}
+          </form>
+        </Modal>
+      )}
     </div>
   );
 }

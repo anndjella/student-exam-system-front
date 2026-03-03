@@ -4,35 +4,71 @@ import {
   createSubject,
   deactivateSubject,
   deleteSubject,
-  fetchAllSubjectsGrouped,
   fetchSubjectByCode,
+  listSubjectsPaged,
 } from "../api/subjectsSSApi";
+
+function clamp(n, min, max) {
+  return Math.max(min, Math.min(max, n));
+}
 
 export function useSsSubjects() {
   const { token } = useAuth();
 
-  const [active, setActive] = useState([]);
-  const [inactive, setInactive] = useState([]);
+  const [tab, setTab] = useState("active");
+  const activeFlag = tab === "active";
+
+  const [items, setItems] = useState([]);
+  const [total, setTotal] = useState(0);
+
+  const [query, setQuery] = useState("");
+  const [skip, setSkip] = useState(0);
+  const [take, setTake] = useState(20);
 
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const page = useMemo(() => Math.floor(skip / take) + 1, [skip, take]);
+  const pageCount = useMemo(() => Math.max(1, Math.ceil(total / take)), [total, take]);
+
+  const canPrev = useMemo(() => skip > 0, [skip]);
+  const canNext = useMemo(() => skip + take < total, [skip, take, total]);
+
+  const goPrev = useCallback(() => {
+    setSkip((s) => Math.max(0, s - take));
+  }, [take]);
+
+  const goNext = useCallback(() => {
+    setSkip((s) => s + take);
+  }, []);
+
+  const goFirst = useCallback(() => {
+    setSkip(0);
+  }, []);
+
   const load = useCallback(async () => {
+    if (!token) return;
+
     setError("");
     setLoading(true);
+
     try {
-      const data = await fetchAllSubjectsGrouped(token);
-      setActive(data?.active || []);
-      setInactive(data?.inactive || []);
+      const data = await listSubjectsPaged(
+        { active: activeFlag, skip, take, query },
+        token
+      );
+
+      setItems(data?.items || []);
+      setTotal(Number(data?.total) || 0);
     } catch (e) {
       setError(e?.message || "Failed to load subjects.");
-      setActive([]);
-      setInactive([]);
+      setItems([]);
+      setTotal(0);
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, activeFlag, skip, take, query]);
 
   useEffect(() => {
     load();
@@ -84,7 +120,8 @@ export function useSsSubjects() {
         setActionLoading(true);
         try {
           await createSubject(payload, token);
-          await load();
+          setTab("active");
+          setSkip(0);
         } catch (e) {
           setError(e?.message || "Failed to create subject.");
         } finally {
@@ -94,13 +131,50 @@ export function useSsSubjects() {
     };
   }, [token, load]);
 
+  const setTabSafe = useCallback((t) => {
+    setTab(t);
+    setSkip(0);
+  }, []);
+
+  const setTakeSafe = useCallback((v) => {
+    const n = Number(v);
+    const next = Number.isFinite(n) ? clamp(n, 1, 100) : 20;
+    setTake(next);
+    setSkip(0);
+  }, []);
+
   return {
-    active,
-    inactive,
+    tab,
+    setTab: setTabSafe,
+    activeFlag,
+
+    items,
+    total,
+
+    query,
+    setQuery: (v) => {
+      setQuery(v);
+      setSkip(0);
+    },
+
+    skip,
+    take,
+    setTake: setTakeSafe,
+
+    page,
+    pageCount,
+    canPrev,
+    canNext,
+    goPrev,
+    goNext,
+    goFirst,
+
     loading,
     actionLoading,
     error,
+
     reload: load,
+
     ...api,
   };
 }

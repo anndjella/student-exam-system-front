@@ -36,7 +36,7 @@ export function TeacherSubjectsPage() {
 
       {error ? <div className="alert-error">{error}</div> : null}
 
-      <div style={{ display: "grid", gridTemplateColumns: "360px 1fr", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "300px 1fr", gap: 12 }}>
         {/* left */}
         <div className="card" style={{ padding: 12 }}>
           <div style={{ display: "flex", gap: 10, marginBottom: 10, flexWrap: "wrap" }}>

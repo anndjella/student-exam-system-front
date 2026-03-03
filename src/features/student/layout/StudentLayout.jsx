@@ -15,7 +15,7 @@ export function StudentLayout() {
     <div className="app-shell">
       <aside className="app-sidebar">
        <div className="app-brand">
-          <div className="app-brand-title">Teacher Portal</div>
+          <div className="app-brand-title">Student Portal</div>
 
           <div className="app-brand-user">
             <span className="app-brand-sub">{payload?.uname}</span>

@@ -1,7 +1,17 @@
 import { apiFetchJson } from "../../../api/client";
 
-export async function fetchAllSubjectsGrouped(token) {
-  return await apiFetchJson("/api/subjects/all", { method: "GET" }, token);
+export async function listSubjectsPaged({ active, skip, take, query }, token) {
+  const qs = new URLSearchParams();
+  qs.set("active", String(Boolean(active)));
+  qs.set("skip", String(skip ?? 0));
+  qs.set("take", String(take ?? 20));
+  if (query && String(query).trim()) qs.set("query", String(query).trim());
+
+  return await apiFetchJson(`/api/subjects?${qs.toString()}`, { method: "GET" }, token);
+}
+
+export async function fetchActiveSubjects(token) {
+  return await apiFetchJson("/api/subjects/active", { method: "GET" }, token);
 }
 
 export async function fetchSubjectByCode(code, token) {

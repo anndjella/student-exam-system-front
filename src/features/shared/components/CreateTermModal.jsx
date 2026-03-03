@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 const initialForm = {
-  name: "",
+  termName: "",
   startDate: "",
   endDate: "",
   registrationStartDate: "",
@@ -69,8 +69,8 @@ export function CreateTermModal({ open, saving, error, onClose, onSubmit }) {
               <div className="page-subtitle">Name</div>
               <input
                 className="input"
-                value={form.name}
-                onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+                value={form.termName}
+                onChange={(e) => setForm((p) => ({ ...p, termName: e.target.value }))}
                 placeholder="e.g. January 2026"
                 required
               />

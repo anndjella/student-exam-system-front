@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { useSsSubjects } from "../hooks/useSsSubjects";
+import { useState } from "react";
+import { useSsSubjects } from "../hooks/useSSSubjects";
 import { EditSubjectTeachersModal } from "../components/EditSubjectTeachersModal";
 import { useAuth } from "../../../auth/AuthContext";
 
@@ -29,19 +29,35 @@ export function StudentServiceSubjectsPage() {
   const { token } = useAuth();
 
   const {
-    active,
-    inactive,
+    tab,
+    setTab,
+    items,
+    total,
+
+    query,
+    setQuery,
+
     loading,
     actionLoading,
     error,
     reload,
+
+    skip,
+    take,
+    setTake,
+    page,
+    pageCount,
+    canPrev,
+    canNext,
+    goPrev,
+    goNext,
+
     searchByCode,
     deactivate,
     remove,
     create,
   } = useSsSubjects();
 
-  const [tab, setTab] = useState("active");
   const [codeQuery, setCodeQuery] = useState("");
   const [searchResult, setSearchResult] = useState(null);
 
@@ -53,14 +69,6 @@ export function StudentServiceSubjectsPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [editSubject, setEditSubject] = useState(null);
   const [savingTeachers, setSavingTeachers] = useState(false);
-
-  const list = tab === "active" ? active : inactive;
-
-  const filteredList = useMemo(() => {
-    const q = codeQuery.trim().toLowerCase();
-    if (!q) return list;
-    return list.filter((s) => (s.code || "").toLowerCase().includes(q));
-  }, [list, codeQuery]);
 
   async function onSearchExact() {
     const res = await searchByCode(codeQuery);
@@ -87,7 +95,6 @@ export function StudentServiceSubjectsPage() {
     setNewCode("");
     setNewName("");
     setNewEcts("");
-    setTab("active");
   }
 
   async function onDeactivate(subject) {
@@ -113,7 +120,6 @@ export function StudentServiceSubjectsPage() {
   }
 
   async function searchTeacherByEmployeeNumber(employeeNumber) {
-    // returns TeacherResponse from backend
     return await findTeacherByEmployeeNumber(employeeNumber, token);
   }
 
@@ -138,12 +144,10 @@ export function StudentServiceSubjectsPage() {
     const toRemove = [];
     const toUpdate = [];
 
-    // removed: in before but not in after
     for (const t of before) {
       if (!afterMap.has(t.id)) toRemove.push(t);
     }
 
-    // added + canGrade changes
     for (const t of after) {
       if (!beforeMap.has(t.id)) {
         toAdd.push(t);
@@ -151,15 +155,12 @@ export function StudentServiceSubjectsPage() {
         const old = beforeMap.get(t.id);
         const oldCan = Boolean(old?.canGrade);
         const newCan = Boolean(t?.canGrade);
-        if (oldCan !== newCan) {
-          toUpdate.push(t);
-        }
+        if (oldCan !== newCan) toUpdate.push(t);
       }
     }
 
     setSavingTeachers(true);
     try {
-      // 1) add
       for (const t of toAdd) {
         await createTeachingAssignment(
           { teacherId: t.id, subjectId, canGrade: Boolean(t.canGrade) },
@@ -167,7 +168,6 @@ export function StudentServiceSubjectsPage() {
         );
       }
 
-      // 2) update canGrade
       for (const t of toUpdate) {
         await updateCanGrade(
           { teacherId: t.id, subjectId, canGrade: Boolean(t.canGrade) },
@@ -175,7 +175,6 @@ export function StudentServiceSubjectsPage() {
         );
       }
 
-      // 3) remove
       for (const t of toRemove) {
         await deleteTeachingAssignment(t.id, subjectId, token);
       }
@@ -190,16 +189,23 @@ export function StudentServiceSubjectsPage() {
     }
   }
 
+  const listToRender = searchResult ? [searchResult] : items;
+
   return (
     <div className="container">
       <div className="page-header">
         <div>
           <h1 className="page-title">Subjects</h1>
-          <div className="page-subtitle">Manage active and inactive subjects. And teaching assignments for subjects.</div>
+          <div className="page-subtitle">
+            Manage active and inactive subjects. Teaching assignments are edited per subject.
+          </div>
         </div>
-        <button className="btn" onClick={reload} disabled={loading || actionLoading}>
-          Refresh
-        </button>
+
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <button className="btn" onClick={reload} disabled={loading || actionLoading}>
+            Refresh
+          </button>
+        </div>
       </div>
 
       {error ? <div className="alert-error">{error}</div> : null}
@@ -238,12 +244,9 @@ export function StudentServiceSubjectsPage() {
             Create
           </button>
         </form>
-        {/* <div className="page-subtitle" style={{ marginTop: 8 }}>
-          Teachers are managed via Teaching Assignments.
-        </div> */}
       </div>
 
-      {/* Tabs + Search */}
+      {/* Tabs + server query + exact code */}
       <div className="card" style={{ padding: 12, marginBottom: 12 }}>
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <button
@@ -254,7 +257,7 @@ export function StudentServiceSubjectsPage() {
             }}
             type="button"
           >
-            Active ({active.length})
+            Active
           </button>
 
           <button
@@ -265,15 +268,23 @@ export function StudentServiceSubjectsPage() {
             }}
             type="button"
           >
-            Inactive ({inactive.length})
+            Inactive
           </button>
 
           <div style={{ flex: 1 }} />
 
           <input
             className="input"
+            style={{ width: 240 }}
+            placeholder="Search (code or name)..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+
+          <input
+            className="input"
             style={{ width: 220 }}
-            placeholder="Search by code..."
+            placeholder="Find exact code..."
             value={codeQuery}
             onChange={(e) => setCodeQuery(e.target.value)}
           />
@@ -283,8 +294,39 @@ export function StudentServiceSubjectsPage() {
           </button>
 
           <button className="btn btn-ghost" type="button" onClick={clearSearch} disabled={!codeQuery && !searchResult}>
-            Clear
+            Clear exact
           </button>
+        </div>
+
+        <div className="page-subtitle" style={{ marginTop: 8, display: "flex", gap: 12, flexWrap: "wrap" }}>
+          <span>
+            Total in tab: <span className="mono">{total}</span>
+          </span>
+          <span>
+            Page <span className="mono">{page}</span>/<span className="mono">{pageCount}</span>
+          </span>
+
+          <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
+            <span style={{ whiteSpace: "nowrap" }}>Page size:</span>
+            <select
+              className="input"
+              style={{ width: 92, padding: "6px 8px" }}
+              value={take}
+              onChange={(e) => setTake(Number(e.target.value))}
+              disabled={loading}
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+            </select>
+
+            <button className="btn" onClick={goPrev} disabled={!canPrev || loading}>
+              Prev
+            </button>
+            <button className="btn" onClick={goNext} disabled={!canNext || loading}>
+              Next
+            </button>
+          </div>
         </div>
       </div>
 
@@ -293,6 +335,7 @@ export function StudentServiceSubjectsPage() {
         <table className="table">
           <thead>
             <tr>
+              <th style={{ width: 70}}>No.</th>
               <th style={{ width: 90 }}>Code</th>
               <th>Name</th>
               <th style={{ width: 80 }}>ECTS</th>
@@ -307,15 +350,18 @@ export function StudentServiceSubjectsPage() {
                   Loading...
                 </td>
               </tr>
-            ) : filteredList.length === 0 ? (
+            ) : listToRender.length === 0 ? (
               <tr>
                 <td colSpan={5} style={{ padding: 10 }}>
                   No subjects found.
                 </td>
               </tr>
             ) : (
-              filteredList.map((s) => (
+              listToRender.map((s,i) => (
                 <tr key={s.id}>
+                  <td className="mono" style={{ textAlign: "center" }}>
+                  {skip + i + 1}
+                  </td>
                   <td className="mono">{s.code}</td>
                   <td>{s.name}</td>
                   <td>{s.ects}</td>
