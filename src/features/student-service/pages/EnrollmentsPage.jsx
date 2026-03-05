@@ -37,6 +37,71 @@ function displayOfSubject(s) {
   return code ? `${code} - ${name || "-"}` : name || "-";
 }
 
+function normalizeSubjectsResponse(res) {
+  if (Array.isArray(res)) {
+    const looksLikeSubject = res.some(
+      (x) => x && (x.code || x.Code || x.name || x.Name) && !(x.subjects || x.Subjects)
+    );
+    if (looksLikeSubject) return res;
+
+    const flat = [];
+    for (const g of res) {
+      const items =
+        (Array.isArray(g?.subjects) && g.subjects) ||
+        (Array.isArray(g?.Subjects) && g.Subjects) ||
+        (Array.isArray(g?.items) && g.items) ||
+        (Array.isArray(g?.Items) && g.Items) ||
+        [];
+      flat.push(...items);
+    }
+    return flat;
+  }
+
+  const groups =
+    (Array.isArray(res?.groups) && res.groups) ||
+    (Array.isArray(res?.Groups) && res.Groups) ||
+    null;
+
+  if (Array.isArray(groups)) {
+    const flat = [];
+    for (const g of groups) {
+      const items =
+        (Array.isArray(g?.subjects) && g.subjects) ||
+        (Array.isArray(g?.Subjects) && g.Subjects) ||
+        (Array.isArray(g?.items) && g.items) ||
+        (Array.isArray(g?.Items) && g.Items) ||
+        [];
+      flat.push(...items);
+    }
+    return flat;
+  }
+
+  if (res && typeof res === "object") {
+    const vals = Object.values(res);
+    const directSubjects = vals.find((v) => Array.isArray(v) && v.some((x) => x && (x.code || x.Code)));
+    if (Array.isArray(directSubjects)) return directSubjects;
+
+    const groupArrays = vals.filter(Array.isArray);
+    if (groupArrays.length) {
+      const flat = [];
+      for (const maybeGroups of groupArrays) {
+        for (const g of maybeGroups) {
+          const items =
+            (Array.isArray(g?.subjects) && g.subjects) ||
+            (Array.isArray(g?.Subjects) && g.Subjects) ||
+            (Array.isArray(g?.items) && g.items) ||
+            (Array.isArray(g?.Items) && g.Items) ||
+            [];
+          flat.push(...items);
+        }
+      }
+      return flat;
+    }
+  }
+
+  return [];
+}
+
 function studentsMatchedOf(r) {
   return Number(pick(r, "studentsMatched", "StudentsMatched") || 0);
 }
@@ -288,9 +353,9 @@ export function EnrollmentsPage() {
       setSubjectsError("");
 
       try {
-        const data = await fetchActiveSubjects(token);
+        const res = await fetchActiveSubjects(token);
         if (!alive) return;
-        setActiveSubjects(Array.isArray(data?.active) ? data.active : []);
+        setActiveSubjects(normalizeSubjectsResponse(res));
       } catch (e) {
         if (!alive) return;
         setSubjectsError(e?.userMessage || e?.message || "Failed to load subjects.");

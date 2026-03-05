@@ -281,17 +281,10 @@ export function ExamsPage() {
                 <th style={{ width: 50 }}>No</th>
                 <th>Student</th>
                 <th className="mono">Index</th>
-                <th className="mono">Code</th>
-                <th>Subject</th>
-                <th className="mono" style={{ width: 80 }}>
-                  ECTS
-                </th>
-                <th>Term</th>
                 <th className="mono">Date</th>
                 <th>Teacher</th>
-                <th className="mono" style={{ width: 80 }}>
-                  Grade
-                </th>
+                <th>Teacher e.n. </th>
+                <th className="mono" style={{ width: 80 }}>Grade</th>
                 <th>Note</th>
                 <th className="mono">SignedAt</th>
               </tr>
@@ -307,12 +300,9 @@ export function ExamsPage() {
                     <td className="mono">{idx + 1}</td>
                     <td>{pick(x, "studentName", "StudentName") || "-"}</td>
                     <td className="mono">{pick(x, "studentIndexNum", "StudentIndexNum") || "-"}</td>
-                    <td className="mono">{pick(x, "subjectCode", "SubjectCode") || "-"}</td>
-                    <td>{pick(x, "subjectName", "SubjectName") || "-"}</td>
-                    <td className="mono">{pick(x, "subjectECTS", "SubjectECTS") || "-"}</td>
-                    <td>{pick(x, "termName", "TermName") || "-"}</td>
                     <td className="mono">{formatDate(pick(x, "date", "Date"))}</td>
                     <td>{pick(x, "teacherName", "TeacherName") || "-"}</td>
+                    <td>{pick(x, "teacherEmployeeNum", "TeacherEmployeeNum") || "-"}</td>
                     <td className="mono">{formatGrade(pick(x, "grade", "Grade"))}</td>
                     <td>{pick(x, "note", "Note") || "-"}</td>
                     <td className="mono">{formatDateTime(pick(x, "signedAt", "SignedAt"))}</td>

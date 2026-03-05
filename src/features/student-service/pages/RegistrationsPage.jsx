@@ -319,9 +319,6 @@ export function RegistrationsPage() {
                 <th className="mono" style={{ width: 140 }}>
                   Index
                 </th>
-                <th>Subject Code</th>
-                <th>Subject</th>
-                <th>Term</th>
                 <th className="mono" style={{ width: 180 }}>
                   RegisteredAt
                 </th>
@@ -342,10 +339,6 @@ export function RegistrationsPage() {
                   const studentName = pick(r, "studentName", "StudentName") || "-";
                   const studentIndex = pick(r, "studentIndexNumber", "StudentIndexNumber") || "-";
 
-                  const subjectName = pick(r, "subjectName", "SubjectName") || "-";
-                  const subjectCode = pick(r, "subjectCode", "SubjectCode") || "-";
-                  const termName = pick(r, "termName", "TermName") || "-";
-
                   const registeredAt = pick(r, "registeredAt", "RegisteredAt") || null;
                   const cancelledAt = pick(r, "cancelledAt", "CancelledAt") || null;
 
@@ -358,9 +351,6 @@ export function RegistrationsPage() {
                       <td className="mono">{regs.skip + idx + 1}</td>
                       <td>{String(studentName).trim() || "-"}</td>
                       <td className="mono">{studentIndex}</td>
-                      <td>{subjectCode}</td>
-                      <td>{subjectName}</td>
-                      <td>{termName}</td>
                       <td className="mono">{formatDateTime(registeredAt)}</td>
                       <td className="mono">{formatDateTime(cancelledAt)}</td>
                     </tr>

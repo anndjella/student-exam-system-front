@@ -1,12 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../../auth/AuthContext";
-import {
-  createExam,
-  fetchRegistrationsForSubjectAndTerm,
-  fetchTermsForGrading,
-  lockExams,
-  updateExam,
-} from "../api/teacherApi";
+
+import { fetchTermsForGrading } from "../api/termsApi";
+import { fetchRegistrationsForSubjectAndTerm } from "../api/registrationsApi";
+import { createExam, updateExam, lockExams } from "../api/examsApi";
 
 function toInputDate(v) {
   if (!v) return "";
@@ -28,11 +25,12 @@ export function useGradeEntry(subjectId) {
   const [error, setError] = useState("");
 
   const loadTerms = useCallback(async () => {
+    if (!token) return;
+
     setError("");
     setLoadingTerms(true);
     try {
       const data = await fetchTermsForGrading(token);
-      console.log("registrations response:", data);
 
       setTerms(data || []);
       const first = (data || [])[0];
@@ -48,13 +46,13 @@ export function useGradeEntry(subjectId) {
 
   const loadRegistrations = useCallback(
     async (sid, tid) => {
-      if (!sid || !tid) return;
+      if (!token || !sid || !tid) return;
+
       setError("");
       setLoadingRegs(true);
       try {
         const data = await fetchRegistrationsForSubjectAndTerm(sid, tid, token);
 
-        // data: TeacherRegistrationResponse[]
         const mapped = (data || []).map((r) => {
           const studentId = r.studentID ?? r.StudentID;
           const signedAt = r.signedAt ?? r.SignedAt ?? null;
@@ -114,7 +112,7 @@ export function useGradeEntry(subjectId) {
   }
 
   async function saveOne(studentId) {
-    if (!subjectId || !termId) return;
+    if (!token || !subjectId || !termId) return;
     const row = rows.find((r) => r.studentId === studentId);
     if (!row || row.locked) return;
 
@@ -130,13 +128,16 @@ export function useGradeEntry(subjectId) {
       const res = row.hasExam
         ? await updateExam(subjectId, termId, studentId, payload, token)
         : await createExam(subjectId, termId, studentId, payload, token);
-     
+
       const signedAt = res?.signedAt ?? res?.SignedAt ?? row.signedAt ?? null;
 
       updateRow(studentId, {
         hasExam: true,
         examId: res?.examID ?? res?.ExamID ?? res?.id ?? res?.ID ?? row.examId,
-        date: toInputDate(res?.examDate ?? res?.ExamDate ?? res?.date ?? res?.Date) || row.date,
+        date:
+          toInputDate(
+            res?.examDate ?? res?.ExamDate ?? res?.date ?? res?.Date
+          ) || row.date,
         grade:
           (res?.grade ?? res?.Grade) == null
             ? row.grade
@@ -155,6 +156,8 @@ export function useGradeEntry(subjectId) {
   }
 
   async function saveAll() {
+    if (!token || !subjectId || !termId) return;
+
     setError("");
     setSaving(true);
     try {
@@ -190,7 +193,7 @@ export function useGradeEntry(subjectId) {
   }
 
   async function lock() {
-    if (!subjectId || !termId) return;
+    if (!token || !subjectId || !termId) return;
 
     const ok = window.confirm(
       "Lock exams for this subject and term? This will prevent further changes."

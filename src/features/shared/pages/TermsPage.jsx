@@ -118,7 +118,7 @@ export function TermsPage() {
 
       {!loading && !error && terms.length > 0 && (
         <div className="table-wrap">
-          <table className="table">
+          <table className="table terms-table">
             <colgroup>
               <col /> {/* Term */}
               <col /> {/* Registration Start */}

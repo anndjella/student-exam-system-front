@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../../../auth/AuthContext";
-import { fetchMyTeacherSubjects } from "../api/teacherApi";
+import { fetchMyTeacherSubjects } from "../api/subjectsApi";
 
 export function useTeacherSubjects() {
   const { token } = useAuth();
@@ -12,6 +12,8 @@ export function useTeacherSubjects() {
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
+    if (!token) return;
+
     setError("");
     setLoading(true);
     try {

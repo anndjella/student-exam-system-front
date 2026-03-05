@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../../auth/AuthContext";
-import { fetchTermsForGrading, fetchRegistrationsForSubjectAndTerm } from "../api/teacherApi";
+import { fetchTermsForGrading } from "../api/termsApi";
+import { fetchRegistrationsForSubjectAndTerm } from "../api/registrationsApi";
 
 function termLabel(t) {
   return t.name ?? t.termName ?? "Term";

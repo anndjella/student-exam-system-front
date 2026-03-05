@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useGradeEntry } from "../hooks/useGradeEntry";
+import { GradeDrawer } from "./GradeDrawer";
 
 /* helpers */
 const pick = (obj, ...keys) => {
@@ -30,11 +31,6 @@ function hasDateValue(dateStr) {
   return typeof dateStr === "string" && dateStr.trim().length > 0;
 }
 
-function validateRow(r) {
-  if (!hasDateValue(r.date)) return "Exam date is required.";
-  return "";
-}
-
 export function GradeEntryPanel({ subject }) {
   const {
     terms,
@@ -54,16 +50,9 @@ export function GradeEntryPanel({ subject }) {
     stats,
   } = useGradeEntry(subject?.id);
 
-  const [bulkDate, setBulkDate] = useState("");
-
-  const [editingId, setEditingId] = useState(null);
-  const [snapshot, setSnapshot] = useState(null);
-
-  const [rowErrorById, setRowErrorById] = useState(() => new Map()); // studentId -> message
-
   const lockedAll = !!stats?.locked;
-  const termOptions = useMemo(() => terms || [], [terms]);
 
+  const termOptions = useMemo(() => terms || [], [terms]);
   const effectiveTerm = useMemo(() => {
     if (!termOptions.length) return null;
 
@@ -79,133 +68,102 @@ export function GradeEntryPanel({ subject }) {
   const canEnterGrades = canEnterGradesOf(effectiveTerm);
   const gradeEntryBlocked = !lockedAll && canEnterGrades === false;
 
-  function setRowError(studentId, msg) {
-    setRowErrorById((m) => {
-      const next = new Map(m);
-      if (!msg) next.delete(studentId);
-      else next.set(studentId, msg);
-      return next;
+  const [bulkDate, setBulkDate] = useState("");
+
+  // Table controls
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const pageSize = 12;
+
+  // Drawer controls
+  const [selectedId, setSelectedId] = useState(null);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return rows;
+
+    return rows.filter((r) => {
+      const name = String(r.studentName || "").toLowerCase();
+      const idx = String(r.studentIndex || "").toLowerCase();
+      return name.includes(q) || idx.includes(q);
     });
-  }
+  }, [rows, query]);
 
-  function clearRowError(studentId) {
-    setRowError(studentId, "");
-  }
+  const totalPages = useMemo(() => {
+    return Math.max(1, Math.ceil(filtered.length / pageSize));
+  }, [filtered.length]);
 
-  function startEdit(r) {
-    if (lockedAll || gradeEntryBlocked || r.locked) return;
-    if (!r.hasExam) return;
+  const pageSafe = Math.min(page, totalPages);
 
-    setEditingId(r.studentId);
-    setSnapshot({ date: r.date || "", grade: r.grade ?? "", note: r.note || "" });
-    clearRowError(r.studentId);
-  }
+  const pagedRows = useMemo(() => {
+    const start = (pageSafe - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, pageSafe]);
 
-  function cancelEdit(r) {
-    if (snapshot) {
-      updateRow(r.studentId, { date: snapshot.date, grade: snapshot.grade, note: snapshot.note });
-    }
-    setEditingId(null);
-    setSnapshot(null);
-    clearRowError(r.studentId);
-  }
+  const selectedRow = useMemo(() => {
+    if (!selectedId) return null;
+    return rows.find((r) => r.studentId === selectedId) || null;
+  }, [rows, selectedId]);
 
-  async function saveEdit(r) {
-    if (lockedAll || gradeEntryBlocked || r.locked) return;
-
-    const msg = validateRow(r);
-    if (msg) {
-      setRowError(r.studentId, msg);
-      return;
-    }
-
-    await saveOne(r.studentId);
-    setEditingId(null);
-    setSnapshot(null);
-    clearRowError(r.studentId);
-  }
-
-  function isEditing(r) {
-    return editingId === r.studentId;
-  }
-
-  function isDateDisabled(r) {
+  function isRowDisabled(r) {
     if (lockedAll || gradeEntryBlocked || r.locked) return true;
-    if (r.hasExam) return true;
     return false;
   }
 
-  function areGradeNoteDisabled(r) {
-    if (lockedAll || gradeEntryBlocked || r.locked) return true;
-    if (r.hasExam) return !isEditing(r);
-    return false;
+ function applyBulkDate() {
+  if (!bulkDate) return;
+  if (lockedAll || gradeEntryBlocked) return;
+
+  for (const r of rows) {
+    if (r.locked) continue;
+    if (r.hasExam) continue;
+    if (hasDateValue(r.date)) continue;
+
+    updateRow(r.studentId, { date: bulkDate });
   }
-
-  function applyBulkDate() {
-    if (!bulkDate) return;
-    if (lockedAll || gradeEntryBlocked) return;
-    setAllDates(bulkDate);
-  }
-
-  async function onSaveOne(r) {
-    if (lockedAll || gradeEntryBlocked || r.locked) return;
-
-    const msg = validateRow(r);
-    if (msg) {
-      setRowError(r.studentId, msg);
-      return;
-    }
-
-    await saveOne(r.studentId);
-    clearRowError(r.studentId);
-  }
+}
 
   async function onSaveAll() {
     if (lockedAll || gradeEntryBlocked) return;
 
-    let anyInvalid = false;
-    for (const r of rows) {
-      if (r.locked) continue;
-      const msg = validateRow(r);
-      if (msg) {
-        anyInvalid = true;
-        setRowError(r.studentId, msg);
-      }
-    }
-    if (anyInvalid) return;
+    // Minimal validation: require date for non-locked rows
+    const invalid = rows.some((r) => !r.locked && !hasDateValue(r.date));
+    if (invalid) return;
 
     await saveAll();
-    setRowErrorById(new Map());
   }
 
-  function onChangeField(studentId, patch) {
-    updateRow(studentId, patch);
-    clearRowError(studentId);
+  async function onSaveSelected(r) {
+    if (!r) return;
+    if (lockedAll || gradeEntryBlocked || r.locked) return;
+    if (!hasDateValue(r.date)) return;
+
+    await saveOne(r.studentId);
+  }
+
+  function onRowClick(r) {
+    setSelectedId(r.studentId);
+  }
+
+  function closeDrawer() {
+    setSelectedId(null);
   }
 
   return (
     <div className="card" style={{ padding: 16 }}>
-      <style>{`
-        .row-entry-blocked td { opacity: 0.65; }
-        .input-invalid { border-color: rgba(220, 38, 38, 0.65) !important; }
-        .field-error { color: rgba(220, 38, 38, 0.95); font-size: 12px; margin-top: 6px; }
-      `}</style>
-
       <div style={{ fontWeight: 900, fontSize: 18, marginBottom: 4 }}>
         {subject?.code} · {subject?.name}
       </div>
 
-      <div className="page-subtitle" style={{ marginBottom: 6 }}>
-        Choose a term, enter grades and notes, then save. Locking prevents further changes.
+      <div className="page-subtitle" style={{ marginBottom: 10 }}>
+        Choose a term, then select a student to enter grade/date/note in the side panel. Use Save all when done.
       </div>
 
       {gradeEntryBlocked ? (
         <div className="page-subtitle" style={{ marginBottom: 10 }}>
           Grade entry will be available when the exam period starts for the selected term.
         </div>
-      ) : (
-        <div style={{ marginBottom: 10 }} />
-      )}
+      ) : null}
 
       {error ? (
         <div className="alert-error" style={{ marginBottom: 10 }}>
@@ -213,12 +171,12 @@ export function GradeEntryPanel({ subject }) {
         </div>
       ) : null}
 
-      <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 10 }}>
+      <div className="toolbar">
         <select
           className="input"
           style={{ width: 320 }}
           value={termId || termIdOf(effectiveTerm) || ""}
-          onChange={(e) => setTermId(Number(e.target.value))}
+          onChange={(e) => { setTermId(Number(e.target.value)); setPage(1); setSelectedId(null); }}
           disabled={loadingTerms}
         >
           {termOptions.map((t) => (
@@ -227,6 +185,15 @@ export function GradeEntryPanel({ subject }) {
             </option>
           ))}
         </select>
+
+        <input
+          className="input"
+          style={{ width: 260 }}
+          value={query}
+          onChange={(e) => { setQuery(e.target.value); setPage(1); }}
+          placeholder="Search by name or index..."
+          disabled={loadingRegs}
+        />
 
         <div style={{ flex: 1 }} />
 
@@ -237,9 +204,13 @@ export function GradeEntryPanel({ subject }) {
         <button className="btn" type="button" onClick={lock} disabled={locking || saving || lockedAll || loadingRegs || gradeEntryBlocked}>
           {lockedAll ? "Locked" : locking ? "Locking..." : "Lock"}
         </button>
+
+        <button className="btn btn-primary" type="button" onClick={onSaveAll} disabled={saving || lockedAll || gradeEntryBlocked || loadingRegs}>
+          {saving ? "Saving..." : "Save all"}
+        </button>
       </div>
 
-      <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 12 }}>
+      <div className="toolbar" style={{ marginTop: 10 }}>
         <input className="input" type="date" value={bulkDate} onChange={(e) => setBulkDate(e.target.value)} disabled={lockedAll || gradeEntryBlocked} />
         <button className="btn" type="button" onClick={applyBulkDate} disabled={lockedAll || gradeEntryBlocked || !bulkDate}>
           Apply date to all (new only)
@@ -247,115 +218,69 @@ export function GradeEntryPanel({ subject }) {
 
         <div style={{ flex: 1 }} />
 
-        <button className="btn btn-primary" type="button" onClick={onSaveAll} disabled={saving || lockedAll || gradeEntryBlocked || loadingRegs}>
-          {saving ? "Saving..." : "Save all"}
-        </button>
+        <div className="pager">
+          <button className="btn" type="button" onClick={() => setPage(1)} disabled={pageSafe === 1}>
+            {"<<"}
+          </button>
+          <button className="btn" type="button" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={pageSafe === 1}>
+            {"<"}
+          </button>
+          <div className="page-subtitle" style={{ margin: "0 8px" }}>
+            Page <b>{pageSafe}</b> / <b>{totalPages}</b>
+          </div>
+          <button className="btn" type="button" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={pageSafe === totalPages}>
+            {">"}
+          </button>
+          <button className="btn" type="button" onClick={() => setPage(totalPages)} disabled={pageSafe === totalPages}>
+            {">>"}
+          </button>
+        </div>
       </div>
 
-      <div className="table-wrap">
-        <table className="table">
+      <div className="table-wrap" style={{ marginTop: 12 }}>
+        <table className="table table-compact">
           <thead>
             <tr>
               <th>Student</th>
-              <th style={{ width: 100 }}>Index</th>
-              <th style={{ width: 150 }}>Exam date</th>
-              <th style={{ width: 90 }}>Grade</th>
-              <th>Note</th>
-              <th style={{ width: 150 }}>Actions</th>
+              <th style={{ width: 140 }}>Index</th>
+              <th style={{ width: 120 }}>Exam date</th>
+              <th style={{ width: 80 }}>Grade</th>
+              <th style={{ width: 90 }}>Status</th>
             </tr>
           </thead>
 
           <tbody>
             {loadingRegs ? (
               <tr>
-                <td colSpan={6} style={{ padding: 10 }}>
-                  Loading registrations...
-                </td>
+                <td colSpan={5} style={{ padding: 10 }}>Loading registrations...</td>
               </tr>
-            ) : rows.length === 0 ? (
+            ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={6} style={{ padding: 10 }}>
-                  No registrations for this subject and term.
-                </td>
+                <td colSpan={5} style={{ padding: 10 }}>No registrations for this subject and term.</td>
               </tr>
             ) : (
-              rows.map((r) => {
-                const editing = isEditing(r);
-                const rowErr = rowErrorById.get(r.studentId) || "";
-                const dateInvalid = !!rowErr && !hasDateValue(r.date);
+              pagedRows.map((r) => {
+                const selected = r.studentId === selectedId;
+                const status = r.locked ? "Locked" : r.hasExam ? "Entered" : "New";
 
                 return (
                   <tr
                     key={r.studentId}
                     className={[
-                      r.hasExam ? "row-has-exam" : "",
-                      editing ? "row-editing" : "",
-                      r.locked ? "row-locked" : "",
+                      selected ? "row-selected" : "",
                       gradeEntryBlocked ? "row-entry-blocked" : "",
+                      r.locked ? "row-locked" : "",
                     ].join(" ")}
+                    onClick={() => onRowClick(r)}
+                    style={{ cursor: "pointer" }}
+                    title="Click to edit"
                   >
-                    <td>{r.studentName}</td>
+                    <td style={{ fontWeight: 800 }}>{r.studentName}</td>
                     <td className="mono">{r.studentIndex || "-"}</td>
-
+                    <td className="mono">{r.date ? r.date : "-"}</td>
+                    <td className="mono">{r.grade ?? "-"}</td>
                     <td>
-                      <div style={{ display: "grid" }}>
-                        <input
-                          className={["input", dateInvalid ? "input-invalid" : ""].join(" ")}
-                          type="date"
-                          value={r.date || ""}
-                          onChange={(e) => onChangeField(r.studentId, { date: e.target.value })}
-                          disabled={isDateDisabled(r)}
-                        />
-                        {dateInvalid ? <div className="field-error">{rowErr}</div> : null}
-                      </div>
-                    </td>
-
-                    <td>
-                      <input
-                        className="input"
-                        value={r.grade}
-                        onChange={(e) => onChangeField(r.studentId, { grade: e.target.value })}
-                        disabled={areGradeNoteDisabled(r)}
-                        inputMode="numeric"
-                        placeholder="-"
-                      />
-                    </td>
-
-                    <td>
-                      <input
-                        className="input"
-                        value={r.note || ""}
-                        onChange={(e) => onChangeField(r.studentId, { note: e.target.value })}
-                        disabled={areGradeNoteDisabled(r)}
-                        placeholder="Optional note..."
-                      />
-                    </td>
-
-                    <td>
-                      <div style={{ display: "flex", gap: 8, flexWrap: "nowrap", justifyContent: "center" }}>
-                        {r.locked ? (
-                          <span className="badge">Locked</span>
-                        ) : r.hasExam ? (
-                          editing ? (
-                            <>
-                              <button className="btn btn-primary" type="button" onClick={() => saveEdit(r)} disabled={saving || lockedAll || gradeEntryBlocked}>
-                                Save
-                              </button>
-                              <button className="btn btn-ghost" type="button" onClick={() => cancelEdit(r)} disabled={saving}>
-                                Cancel
-                              </button>
-                            </>
-                          ) : (
-                            <button className="btn" type="button" onClick={() => startEdit(r)} disabled={saving || lockedAll || gradeEntryBlocked}>
-                              Edit
-                            </button>
-                          )
-                        ) : (
-                          <button className="btn btn-primary" type="button" onClick={() => onSaveOne(r)} disabled={saving || lockedAll || gradeEntryBlocked || r.locked}>
-                            Save
-                          </button>
-                        )}
-                      </div>
+                      <span className="badge">{status}</span>
                     </td>
                   </tr>
                 );
@@ -364,6 +289,16 @@ export function GradeEntryPanel({ subject }) {
           </tbody>
         </table>
       </div>
+
+      <GradeDrawer
+        open={Boolean(selectedRow)}
+        onClose={closeDrawer}
+        row={selectedRow}
+        disabled={selectedRow ? isRowDisabled(selectedRow) : true}
+        onChangeField={(studentId, patch) => updateRow(studentId, patch)}
+        onSave={onSaveSelected}
+        saving={saving}
+      />
 
       {lockedAll ? (
         <div className="page-subtitle" style={{ marginTop: 10 }}>

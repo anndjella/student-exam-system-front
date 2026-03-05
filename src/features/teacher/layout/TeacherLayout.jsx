@@ -63,6 +63,13 @@ export function TeacherLayout() {
             Registrations & Grades
           </NavLink>
 
+              <NavLink
+            to="/teacher/exams"
+            className={({ isActive }) => "menu-card" + (isActive ? " active" : "")}
+          >
+            Exams
+          </NavLink>
+
           <NavLink
             to="/teacher/me"
             className={({ isActive }) => "menu-card" + (isActive ? " active" : "")}>

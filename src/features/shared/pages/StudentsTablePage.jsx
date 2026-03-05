@@ -351,10 +351,10 @@ export function StudentsTablePage({
           <table className="table">
             <thead>
               <tr>
-                <th style={{ width: 70, textAlign: "center" }}>No.</th>
-                <th style={{ textAlign: "left" }}>Student</th>
+                <th style={{ width: 50, textAlign: "center" }}>No.</th>
+                <th style={{ width: 150, textAlign: "left" }}>Student</th>
                 <th style={{ width: 150, textAlign: "center" }}>Date of birth</th>
-                <th style={{ width: 220, textAlign: "center" }}>Index number</th>
+                <th style={{ width: 160, textAlign: "center" }}>Index number</th>
 
                 {tab === "deleted" && (
                   <th style={{ width: 190, textAlign: "center" }}>Deleted at</th>

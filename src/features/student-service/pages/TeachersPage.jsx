@@ -380,15 +380,15 @@ export function TeachersPage({
             <thead>
               <tr>
                 <th style={{ width: 70, textAlign: "center" }}>No.</th>
-                <th style={{ textAlign: "left" }}>Teacher</th>
+                <th style={{width: 160, textAlign: "left" }}>Teacher</th>
                 <th style={{ width: 160, textAlign: "center" }}>Date of birth</th>
-                <th style={{ width: 220, textAlign: "center" }}>Employee number</th>
+                <th style={{ width: 160, textAlign: "center" }}>Employee number</th>
 
                 {onlyDeleted && (
                   <th style={{ width: 190, textAlign: "center" }}>Deleted at</th>
                 )}
 
-                <th style={{ width: 240, textAlign: "center" }}>Title</th>
+                <th style={{ width: 160, textAlign: "center" }}>Title</th>
 
                 {!effectiveReadOnly && (
                   <th style={{ width: 190, textAlign: "center" }}>Actions</th>
