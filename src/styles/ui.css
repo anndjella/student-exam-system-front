@@ -453,3 +453,21 @@
   padding: 10px;
   resize: vertical;
 }
+
+.profile-table th {
+  background: #1f2a44;
+  color: #fff;
+  font-weight: 700;
+  text-align: left;
+  width: 220px;
+}
+
+.profile-table tr:nth-child(even) th,
+.profile-table tr:nth-child(odd) th {
+  background: #1f2a44;
+  color: #fff;
+}
+
+.profile-table td {
+  text-align: left !important;
+}

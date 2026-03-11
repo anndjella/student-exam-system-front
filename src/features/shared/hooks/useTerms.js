@@ -30,5 +30,5 @@ export function useTerms() {
     load();
   }, [load]);
 
-  return { terms, loading, error, reload: load };
+  return { terms, loading, error};
 }

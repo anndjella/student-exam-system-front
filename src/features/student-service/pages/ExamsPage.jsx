@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "../../../auth/AuthContext";
 import { useTerms } from "../../shared/hooks/useTerms";
 import { fetchActiveSubjects } from "../api/subjectsSSApi";
 import { useSSExams } from "../hooks/useSSExams";
-import {formatDate,formatDateTime} from "../../../utils/datetime";
+import { formatDate, formatDateTime } from "../../../utils/datetime";
 
-/* small pick helper */
+/* helpers */
 const pick = (obj, ...keys) => {
   for (const k of keys) {
     const v = obj?.[k];
@@ -13,6 +13,17 @@ const pick = (obj, ...keys) => {
   }
   return "";
 };
+
+function prettyErrorMessage(message) {
+  if (!message) return "Request failed.";
+
+  try {
+    const obj = JSON.parse(message);
+    return obj.detail || obj.Detail || obj.title || obj.Title || "Request failed.";
+  } catch {
+    return message;
+  }
+}
 
 function termIdOf(t) {
   return pick(t, "termID", "TermID", "id", "ID");
@@ -22,8 +33,22 @@ function subjectIdOf(s) {
   return pick(s, "subjectID", "SubjectID", "id", "ID");
 }
 
+function termKeyOf(t, idx) {
+  return (
+    termIdOf(t) ??
+    `${pick(t, "termName", "TermName") || "term"}-${idx}`
+  );
+}
+
+function subjectKeyOf(s, idx) {
+  return (
+    subjectIdOf(s) ??
+    `${pick(s, "code", "Code") || "subject"}-${idx}`
+  );
+}
+
 function termLabel(t) {
-  return pick(t, "name", "termName", "TermName", "title", "Title") || "-";
+  return pick(t, "termName", "TermName") || "-";
 }
 
 function subjectLabel(s) {
@@ -31,7 +56,6 @@ function subjectLabel(s) {
   const name = pick(s, "name", "Name");
   return code ? `${code} · ${name || "-"}` : name || "-";
 }
-
 
 function formatGrade(v) {
   if (v === null || v === undefined) return "N.I.";
@@ -80,7 +104,9 @@ function normalizeSubjectsResponse(res) {
 
   if (res && typeof res === "object") {
     const vals = Object.values(res);
-    const directSubjects = vals.find((v) => Array.isArray(v) && v.some((x) => x && (x.code || x.Code)));
+    const directSubjects = vals.find(
+      (v) => Array.isArray(v) && v.some((x) => x && (x.code || x.Code))
+    );
     if (Array.isArray(directSubjects)) return directSubjects;
 
     const groupArrays = vals.filter(Array.isArray);
@@ -106,8 +132,7 @@ function normalizeSubjectsResponse(res) {
 
 export function ExamsPage() {
   const { token, role } = useAuth();
-
-  const isStudentService = useMemo(() => String(role ?? "").toLowerCase() === "studentservice", [role]);
+  const isStudentService = role === "StudentService";
 
   const { terms, loading: termsLoading, error: termsError, reload: reloadTerms } = useTerms();
 
@@ -115,24 +140,15 @@ export function ExamsPage() {
   const [subjectsLoading, setSubjectsLoading] = useState(false);
   const [subjectsError, setSubjectsError] = useState("");
 
-  const [termId, setTermId] = useState("");
-  const [subjectId, setSubjectId] = useState("");
-  const [hasLoaded, setHasLoaded] = useState(false);
-
-  const canLoad = Boolean(termId && subjectId);
-
-  const { unsignedCount, exams, loading, error, reload } = useSSExams(
-    termId ? Number(termId) : null,
-    subjectId ? Number(subjectId) : null,
-    false
-  );
+  const exams = useSSExams(20);
+  const canRun = Boolean(exams.canSearch);
 
   useEffect(() => {
-    if (!token) return;
-
     let alive = true;
 
-    (async () => {
+    async function loadSubjects() {
+      if (!token) return;
+
       setSubjectsLoading(true);
       setSubjectsError("");
 
@@ -142,96 +158,108 @@ export function ExamsPage() {
         setSubjects(normalizeSubjectsResponse(res));
       } catch (e) {
         if (!alive) return;
-        setSubjectsError(e?.message ?? "Failed to load subjects.");
+        setSubjectsError(e?.userMessage || e?.message || "Failed to load subjects.");
         setSubjects([]);
       } finally {
         if (!alive) return;
         setSubjectsLoading(false);
       }
-    })();
+    }
 
+    loadSubjects();
     return () => {
       alive = false;
     };
   }, [token]);
 
-  useEffect(() => {
-    setHasLoaded(false);
-  }, [termId, subjectId]);
+  function onKeyDown(e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      exams.search();
+    }
+  }
 
   if (!isStudentService) {
     return (
       <div className="container">
-        <div className="alert-error">You are not allowed to view this page.</div>
+        <div className="alert-error">Forbidden</div>
       </div>
     );
   }
+
+  const items = exams.items || [];
 
   return (
     <div className="container">
       <div className="page-header">
         <div>
           <h1 className="page-title">Exams</h1>
-          <div className="page-subtitle">Choose term and subject to list exams (Student Service).</div>
+          <div className="page-subtitle">
+            Choose term and subject, optionally filter by student index.
+          </div>
         </div>
 
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <button className="btn" onClick={reloadTerms} disabled={termsLoading}>
-            Refresh terms
-          </button>
-
-          <button className="btn" onClick={reload} disabled={loading || !canLoad}>
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <button className="btn" onClick={exams.reload} disabled={exams.loading || !canRun}>
             Refresh list
           </button>
         </div>
       </div>
 
-      <div className="card" style={{ padding: 16, marginBottom: 12 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      <div className="card" style={{ padding: 12, marginBottom: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
           <div style={{ display: "grid", gap: 6 }}>
             <div className="page-subtitle">Term</div>
             <select
               className="input"
-              value={termId}
-              onChange={(e) => setTermId(e.target.value)}
+              value={exams.termId}
+              onChange={(e) => exams.setTermId(e.target.value)}
               disabled={termsLoading}
             >
               <option value="">Select term...</option>
               {(terms || []).map((t, idx) => {
                 const id = termIdOf(t);
-                const key = id ?? `${termLabel(t)}-${idx}`;
                 return (
-                  <option key={key} value={id != null ? String(id) : ""}>
+                  <option key={termKeyOf(t, idx)} value={id ?? ""}>
                     {termLabel(t)}
                   </option>
                 );
               })}
             </select>
-
-            {termsError && <div className="alert-error">{String(termsError)}</div>}
+            {termsError ? <div className="alert-error">{prettyErrorMessage(termsError)}</div> : null}
           </div>
 
           <div style={{ display: "grid", gap: 6 }}>
             <div className="page-subtitle">Subject</div>
             <select
               className="input"
-              value={subjectId}
-              onChange={(e) => setSubjectId(e.target.value)}
+              value={exams.subjectId}
+              onChange={(e) => exams.setSubjectId(e.target.value)}
               disabled={subjectsLoading}
             >
               <option value="">Select subject...</option>
               {(subjects || []).map((s, idx) => {
                 const id = subjectIdOf(s);
-                const key = id ?? `${pick(s, "code", "Code", "name", "Name")}-${idx}`;
                 return (
-                  <option key={key} value={id != null ? String(id) : ""}>
+                  <option key={subjectKeyOf(s, idx)} value={id ?? ""}>
                     {subjectLabel(s)}
                   </option>
                 );
               })}
             </select>
+            {subjectsError ? <div className="alert-error">{prettyErrorMessage(subjectsError)}</div> : null}
+          </div>
 
-            {subjectsError && <div className="alert-error">{subjectsError}</div>}
+          <div style={{ display: "grid", gap: 6 }}>
+            <div className="page-subtitle">Student index (optional)</div>
+            <input
+              className="input"
+              placeholder="e.g. 2021/1234"
+              value={exams.query}
+              onChange={(e) => exams.setQuery(e.target.value)}
+              onKeyDown={onKeyDown}
+              disabled={!canRun || exams.loading}
+            />
           </div>
         </div>
 
@@ -239,80 +267,118 @@ export function ExamsPage() {
           style={{
             display: "flex",
             justifyContent: "space-between",
+            alignItems: "center",
             gap: 10,
             flexWrap: "wrap",
             marginTop: 12,
-            alignItems: "center",
           }}
         >
           <div className="page-subtitle" style={{ margin: 0 }}>
-            {canLoad && hasLoaded ? (
-              <>
-                Unsigned:{" "}
-                <span className="mono" style={{ fontWeight: 900 }}>
-                  {unsignedCount ?? 0}
-                </span>
-              </>
-            ) : (
-              <>Pick term + subject to load exams.</>
-            )}
+            {!canRun
+              ? "Pick term + subject, then Search."
+              : `Unsigned: ${exams.unsignedCount} · Showing ${items.length} of ${exams.total} (page ${exams.page}/${exams.totalPages})`}
           </div>
 
-          <button className="btn btn-primary" onClick={() => {
-            reload();
-            setHasLoaded(true);
-          }} disabled={loading || !canLoad}>
-            {loading ? "Loading..." : "Load"}
-          </button>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <button
+              className="btn btn-primary"
+              type="button"
+              onClick={exams.search}
+              disabled={!canRun || exams.loading}
+            >
+              {exams.loading ? "Loading..." : "Search"}
+            </button>
+
+            <button
+              className="btn btn-ghost"
+              type="button"
+              onClick={exams.clearSearch}
+              disabled={exams.loading}
+            >
+              Clear
+            </button>
+
+            <button
+              className="btn"
+              type="button"
+              onClick={exams.prev}
+              disabled={!exams.canPrev || exams.loading}
+            >
+              Prev
+            </button>
+
+            <button
+              className="btn"
+              type="button"
+              onClick={exams.next}
+              disabled={!exams.canNext || exams.loading}
+            >
+              Next
+            </button>
+
+            <span className="badge">Page size: {exams.take}</span>
+          </div>
         </div>
       </div>
 
-      {error && <div className="alert-error">{error}</div>}
+      {exams.error ? (
+        <div className="alert-error" style={{ marginBottom: 12 }}>
+          {prettyErrorMessage(exams.error)}
+        </div>
+      ) : null}
 
-      {!error && canLoad && !loading && (exams?.length ?? 0) === 0 && (
-        <div className="page-subtitle center">No exams for selected term and subject.</div>
-      )}
+      {!exams.error && canRun && !exams.loading && items.length === 0 ? (
+        <div className="page-subtitle center">No exams found.</div>
+      ) : null}
 
-      {!error && (exams?.length ?? 0) > 0 && (
+      {!exams.error && items.length > 0 ? (
         <div className="table-wrap">
           <table className="table">
             <thead>
               <tr>
-                <th style={{ width: 50 }}>No</th>
+                <th style={{ width: 60 }}>No</th>
                 <th>Student</th>
-                <th className="mono">Index</th>
-                <th className="mono">Date</th>
+                <th className="mono" style={{ width: 140 }}>Index</th>
+                <th className="mono" style={{ width: 140 }}>Date</th>
                 <th>Teacher</th>
-                <th>Teacher e.n. </th>
-                <th className="mono" style={{ width: 80 }}>Grade</th>
+                <th className="mono" style={{ width: 140 }}>Teacher e.n.</th>
+                <th className="mono" style={{ width: 90 }}>Grade</th>
                 <th>Note</th>
-                <th className="mono">SignedAt</th>
+                <th className="mono" style={{ width: 180 }}>SignedAt</th>
               </tr>
             </thead>
             <tbody>
-              {exams.map((x, idx) => {
-                const rowKey =
-                  pick(x, "examID", "ExamID", "id", "ID") ||
-                  `${pick(x, "studentID", "StudentID")}-${pick(x, "subjectID", "SubjectID")}-${pick(x, "termID", "TermID")}-${pick(x, "date", "Date")}-${idx}`;
+              {exams.loading ? (
+                <tr>
+                  <td colSpan={9} style={{ padding: 10 }}>
+                    Loading...
+                  </td>
+                </tr>
+              ) : (
+                items.map((x, idx) => {
+                  const rowKey =
+                    pick(x, "examID", "ExamID", "id", "ID") ||
+                    `${pick(x, "studentID", "StudentID")}-${pick(x, "subjectID", "SubjectID")}-${pick(x, "termID", "TermID")}-${pick(x, "date", "Date")}-${idx}`;
 
-                return (
-                  <tr key={rowKey}>
-                    <td className="mono">{idx + 1}</td>
-                    <td>{pick(x, "studentName", "StudentName") || "-"}</td>
-                    <td className="mono">{pick(x, "studentIndexNum", "StudentIndexNum") || "-"}</td>
-                    <td className="mono">{formatDate(pick(x, "date", "Date"))}</td>
-                    <td>{pick(x, "teacherName", "TeacherName") || "-"}</td>
-                    <td>{pick(x, "teacherEmployeeNum", "TeacherEmployeeNum") || "-"}</td>
-                    <td className="mono">{formatGrade(pick(x, "grade", "Grade"))}</td>
-                    <td>{pick(x, "note", "Note") || "-"}</td>
-                    <td className="mono">{formatDateTime(pick(x, "signedAt", "SignedAt"))}</td>
-                  </tr>
-                );
-              })}
+                  return (
+                    <tr key={rowKey}>
+                      <td className="mono">{exams.skip + idx + 1}</td>
+                      <td>{pick(x, "studentName", "StudentName") || "-"}</td>
+                      <td className="mono">{pick(x, "studentIndexNum", "StudentIndexNum") || "-"}</td>
+                      <td className="mono">{formatDate(pick(x, "date", "Date"))}</td>
+                      <td>{pick(x, "teacherName", "TeacherName") || "-"}</td>
+                      <td className="mono">{pick(x, "teacherEmployeeNum", "TeacherEmployeeNum") || "-"}</td>
+                      <td className="mono">{formatGrade(pick(x, "grade", "Grade"))}</td>
+                      <td>{pick(x, "note", "Note") || "-"}</td>
+                      <td className="mono">{formatDateTime(pick(x, "signedAt", "SignedAt"))}</td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

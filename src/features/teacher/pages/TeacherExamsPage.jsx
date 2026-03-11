@@ -2,34 +2,52 @@ import { useMemo, useState } from "react";
 import TeacherExamTable from "../components/TeacherExamTable";
 import { useTeacherExamsPage } from "../hooks/useTeacherExams";
 
-export  function TeacherExamsPage() {
+export function TeacherExamsPage() {
   const {
     gradableSubjects,
     nonGradableSubjects,
     terms,
-    subjectId,
-    setSubjectId,
-    termId,
-    setTermId,
     data,
     loadingInit,
     loadingExams,
     error,
     reload,
+    loadExams,
   } = useTeacherExamsPage();
 
-  const allSubjects = [...gradableSubjects, ...nonGradableSubjects];
+  const allSubjects = useMemo(() => {
+    return [...(gradableSubjects ?? []), ...(nonGradableSubjects ?? [])];
+  }, [gradableSubjects, nonGradableSubjects]);
 
-  const mineCount = data?.mine?.length ?? 0;
-  const othersCount = data?.others?.length ?? 0;
+  const [tab, setTab] = useState("mine");
+  const [selectedSubjectId, setSelectedSubjectId] = useState("");
+  const [selectedTermId, setSelectedTermId] = useState("");
+  const [hasLoaded, setHasLoaded] = useState(false);
 
-  const [tab, setTab] = useState("mine"); // "mine" | "others"
+  const canLoad = Boolean(selectedSubjectId) && Boolean(selectedTermId);
+
+  const mineCount = hasLoaded ? (data?.mine?.length ?? 0) : 0;
+  const othersCount = hasLoaded ? (data?.others?.length ?? 0) : 0;
 
   const tableData = useMemo(() => {
-    return tab === "mine" ? data?.mine ?? [] : data?.others ?? [];
-  }, [tab, data]);
+    if (!hasLoaded) return [];
+    return tab === "mine" ? (data?.mine ?? []) : (data?.others ?? []);
+  }, [tab, data, hasLoaded]);
 
   const showTeacher = tab === "others";
+
+  async function handleLoad() {
+    if (!canLoad) return;
+
+    await loadExams(Number(selectedSubjectId), Number(selectedTermId));
+    setHasLoaded(true);
+  }
+
+  async function handleRefresh() {
+    if (!canLoad || !hasLoaded) return;
+
+    await reload(Number(selectedSubjectId), Number(selectedTermId));
+  }
 
   return (
     <div className="container">
@@ -41,7 +59,12 @@ export  function TeacherExamsPage() {
           </div>
         </div>
 
-        <button className="btn" onClick={reload} disabled={loadingInit || loadingExams}>
+        <button
+          className="btn"
+          onClick={handleRefresh}
+          disabled={loadingInit || loadingExams || !hasLoaded || !canLoad}
+          type="button"
+        >
           Refresh
         </button>
       </div>
@@ -49,18 +72,25 @@ export  function TeacherExamsPage() {
       {error && <div className="alert-error">Request failed ({error})</div>}
 
       <div className="card" style={{ padding: 14 }}>
-        <div className="toolbar">
+        <div
+          className="toolbar"
+          style={{ alignItems: "end", gap: 14, flexWrap: "wrap" }}
+        >
           <div className="form-field">
             <span>Subject</span>
             <select
               className="input"
-              value={subjectId ?? ""}
-              onChange={(e) => setSubjectId(Number(e.target.value))}
+              value={selectedSubjectId}
+              onChange={(e) => setSelectedSubjectId(e.target.value)}
               disabled={loadingInit}
             >
+              <option value="">Select subject</option>
               {allSubjects.map((s) => {
                 const id = s?.subjectID ?? s?.id;
-                const label = s?.code ? `${s.code} · ${s.name}` : s?.name ?? `#${id}`;
+                const label = s?.code
+                  ? `${s.code} · ${s.name}`
+                  : s?.name ?? `#${id}`;
+
                 return (
                   <option key={id} value={id}>
                     {label}
@@ -74,13 +104,15 @@ export  function TeacherExamsPage() {
             <span>Term</span>
             <select
               className="input"
-              value={termId ?? ""}
-              onChange={(e) => setTermId(Number(e.target.value))}
+              value={selectedTermId}
+              onChange={(e) => setSelectedTermId(e.target.value)}
               disabled={loadingInit}
             >
+              <option value="">Select term</option>
               {terms.map((t) => {
                 const id = t?.termID ?? t?.id;
                 const label = t?.name ?? t?.termName ?? `Term ${id}`;
+
                 return (
                   <option key={id} value={id}>
                     {label}
@@ -89,6 +121,17 @@ export  function TeacherExamsPage() {
               })}
             </select>
           </div>
+
+          <div style={{ display: "flex", alignItems: "end" }}>
+            <button
+              className="btn btn-primary"
+              onClick={handleLoad}
+              disabled={!canLoad || loadingInit || loadingExams}
+              type="button"
+            >
+              Load
+            </button>
+          </div>
         </div>
       </div>
 
@@ -96,11 +139,12 @@ export  function TeacherExamsPage() {
 
       <div className="card" style={{ padding: 14 }}>
         <div className="toolbar" style={{ justifyContent: "space-between" }}>
-          <div style={{ display: "flex", gap: 10 }}>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
             <button
               className={`btn ${tab === "mine" ? "btn-primary" : ""}`}
               onClick={() => setTab("mine")}
               type="button"
+              disabled={!hasLoaded}
             >
               Entered by me ({mineCount})
             </button>
@@ -109,17 +153,24 @@ export  function TeacherExamsPage() {
               className={`btn ${tab === "others" ? "btn-primary" : ""}`}
               onClick={() => setTab("others")}
               type="button"
+              disabled={!hasLoaded}
             >
               Entered by others ({othersCount})
             </button>
           </div>
 
-          {loadingExams && <span className="badge">Loading...</span>}
+          {loadingExams && hasLoaded && <span className="badge">Loading...</span>}
         </div>
 
         <div style={{ height: 12 }} />
 
-        <TeacherExamTable exams={tableData} showTeacher={showTeacher} />
+        {!hasLoaded ? (
+          <div className="page-subtitle center" style={{ padding: 20 }}>
+            Select subject and term, then click Load.
+          </div>
+        ) : (
+          <TeacherExamTable exams={tableData} showTeacher={showTeacher} />
+        )}
       </div>
     </div>
   );

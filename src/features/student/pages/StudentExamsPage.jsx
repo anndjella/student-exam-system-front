@@ -5,10 +5,11 @@ import { formatDate } from "../../../utils/datetime";
 
 function formatGrade(value) {
   if (value === null || value === undefined) {
-    return "N.I."; 
+    return "N.I.";
   }
   return value;
 }
+
 function formatGpa(value) {
   if (value === null || value === undefined) return "-";
   const num = Number(value);
@@ -16,7 +17,12 @@ function formatGpa(value) {
   return num.toFixed(2);
 }
 
-function ExamsTable({ items, emptyText }) {
+function sortIndicator(column, sortBy, sortDir) {
+  if (sortBy !== column) return "↕";
+  return sortDir === "asc" ? "↑" : "↓";
+}
+
+function ExamsTable({ items, emptyText, sortBy, sortDir, onSort }) {
   if (!items || items.length === 0) {
     return (
       <div className="page-subtitle center" style={{ padding: 12 }}>
@@ -33,14 +39,36 @@ function ExamsTable({ items, emptyText }) {
             <th style={{ width: 50 }}>No</th>
             <th style={{ width: 80 }}>Code</th>
             <th>Subject</th>
-            <th style={{ width: 80 }}>ECTS</th>
+
+            <th
+              style={{ width: 80, cursor: "pointer", userSelect: "none" }}
+              onClick={() => onSort("ects")}
+            >
+              ECTS {sortIndicator("ects", sortBy, sortDir)}
+            </th>
+
             <th>Term</th>
-            <th>Date</th>
+
+            <th
+              style={{ cursor: "pointer", userSelect: "none" }}
+              onClick={() => onSort("date")}
+            >
+              Date {sortIndicator("date", sortBy, sortDir)}
+            </th>
+
             <th>Teacher</th>
-            <th style={{ width: 80 }}>Grade</th>
+
+            <th
+              style={{ width: 80, cursor: "pointer", userSelect: "none" }}
+              onClick={() => onSort("grade")}
+            >
+              Grade {sortIndicator("grade", sortBy, sortDir)}
+            </th>
+
             <th>Note</th>
           </tr>
         </thead>
+
         <tbody>
           {items.map((x, idx) => (
             <tr key={x.id ?? x.ID ?? idx}>
@@ -88,13 +116,52 @@ export function StudentExamsPage() {
   const { passed, notPassed, loading, error, reload } = useStudentExams();
   const { me, loading: meLoading } = useMe();
 
-  // Default open: Passed
-  const [tab, setTab] = useState("passed"); // "passed" | "notPassed"
+  const [tab, setTab] = useState("passed");
+  const [sortBy, setSortBy] = useState(null); // "ects" | "date" | "grade" | null
+  const [sortDir, setSortDir] = useState("asc"); // "asc" | "desc"
 
-  const activeItems = useMemo(
-    () => (tab === "passed" ? passed : notPassed),
-    [tab, passed, notPassed]
-  );
+  function handleSort(column) {
+    if (sortBy === column) {
+      setSortDir((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(column);
+      setSortDir("asc");
+    }
+  }
+
+  const activeItems = useMemo(() => {
+    return tab === "passed" ? passed : notPassed;
+  }, [tab, passed, notPassed]);
+
+  const sortedItems = useMemo(() => {
+    const arr = [...activeItems];
+
+    if (!sortBy) return arr;
+
+    arr.sort((a, b) => {
+      if (sortBy === "ects") {
+        const aVal = Number(a.subjectECTS ?? a.SubjectECTS ?? 0);
+        const bVal = Number(b.subjectECTS ?? b.SubjectECTS ?? 0);
+        return sortDir === "asc" ? aVal - bVal : bVal - aVal;
+      }
+
+      if (sortBy === "grade") {
+        const aVal = Number(a.grade ?? a.Grade ?? 0);
+        const bVal = Number(b.grade ?? b.Grade ?? 0);
+        return sortDir === "asc" ? aVal - bVal : bVal - aVal;
+      }
+
+      if (sortBy === "date") {
+        const aVal = new Date(a.date ?? a.Date ?? 0).getTime();
+        const bVal = new Date(b.date ?? b.Date ?? 0).getTime();
+        return sortDir === "asc" ? aVal - bVal : bVal - aVal;
+      }
+
+      return 0;
+    });
+
+    return arr;
+  }, [activeItems, sortBy, sortDir]);
 
   const activeEmptyText =
     tab === "passed" ? "No passed exams yet." : "No failed exams.";
@@ -122,7 +189,6 @@ export function StudentExamsPage() {
 
       {!loading && !error && (
         <div className="card" style={{ padding: 16 }}>
-          {/* Tabs on the left, stats on the right */}
           <div
             style={{
               display: "flex",
@@ -169,7 +235,13 @@ export function StudentExamsPage() {
             )}
           </div>
 
-          <ExamsTable items={activeItems} emptyText={activeEmptyText} />
+          <ExamsTable
+            items={sortedItems}
+            emptyText={activeEmptyText}
+            sortBy={sortBy}
+            sortDir={sortDir}
+            onSort={handleSort}
+          />
         </div>
       )}
     </div>

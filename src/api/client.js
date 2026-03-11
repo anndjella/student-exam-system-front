@@ -2,14 +2,54 @@ const API_BASE_URL = "http://localhost:5000";
 
 export class ApiError extends Error {
   constructor(message, { status, title, detail, errorCode } = {}) {
-    super(message);
+    const finalMessage = buildMessage(message, title, detail);
+
+    super(finalMessage);
+
     this.name = "ApiError";
     this.status = status;
     this.title = title;
     this.detail = detail;
     this.errorCode = errorCode;
-    this.userMessage = detail || title || message;
+
+    // svi UI delovi koriste isto
+    this.userMessage = finalMessage;
   }
+}
+
+function buildMessage(message, title, detail) {
+  if (detail && message && detail !== message) {
+    return `${message} ${detail}`;
+  }
+
+  if (detail) return detail;
+  if (title) return title;
+  if (message) return message;
+
+  return "Request failed.";
+}
+
+function normalizeNetworkError(err) {
+  if (!navigator.onLine) {
+    return new ApiError("You are offline.", {
+      detail: "Check your internet connection.",
+    });
+  }
+
+  if (
+    err instanceof TypeError &&
+    (err.message.includes("Failed to fetch") ||
+      err.message.includes("NetworkError") ||
+      err.message.includes("Load failed"))
+  ) {
+    return new ApiError("Cannot connect to the server.", {
+      detail: "Make sure the backend is running.",
+    });
+  }
+
+  return err instanceof ApiError
+    ? err
+    : new ApiError("Unexpected network error.", { detail: err?.message });
 }
 
 async function readJsonSafe(res) {
@@ -38,7 +78,6 @@ async function extractProblem(res) {
 
   const ct = res.headers.get("content-type") || "";
 
-  // JSON response
   if (ct.includes("json")) {
     const body = await readJsonSafe(res);
 
@@ -48,16 +87,30 @@ async function extractProblem(res) {
 
     if (body?.errors) {
       const detail = flattenValidationErrors(body.errors) || "";
+
       return {
         title: body.title || body.Title || "Validation failed",
         detail,
-        errorCode: body?.errorCode || body?.ErrorCode || body?.extensions?.errorCode,
+        errorCode:
+          body?.errorCode ||
+          body?.ErrorCode ||
+          body?.extensions?.errorCode,
       };
     }
 
-    const title = body.title || body.Title || body.message || body.Message || fallbackTitle;
+    const title =
+      body.title ||
+      body.Title ||
+      body.message ||
+      body.Message ||
+      fallbackTitle;
+
     const detail = body.detail || body.Detail || "";
-    const errorCode = body?.errorCode || body?.ErrorCode || body?.extensions?.errorCode;
+
+    const errorCode =
+      body?.errorCode ||
+      body?.ErrorCode ||
+      body?.extensions?.errorCode;
 
     return { title, detail, errorCode };
   }
@@ -72,9 +125,8 @@ async function extractProblem(res) {
 
 async function throwApiError(res) {
   const p = await extractProblem(res);
-  const msg = p.detail || p.title || `Request failed (${res.status})`;
 
-  throw new ApiError(msg, {
+  throw new ApiError(p.title, {
     status: res.status,
     title: p.title,
     detail: p.detail,
@@ -94,18 +146,31 @@ function withAuthHeaders(options = {}, token) {
 }
 
 export async function apiFetchJson(path, options = {}, token) {
-  const res = await fetch(API_BASE_URL + path, withAuthHeaders(options, token));
+  let res;
+
+  try {
+    res = await fetch(API_BASE_URL + path, withAuthHeaders(options, token));
+  } catch (err) {
+    throw normalizeNetworkError(err);
+  }
 
   if (!res.ok) {
     await throwApiError(res);
   }
 
   if (res.status === 204) return null;
+
   return await res.json();
 }
 
 export async function apiFetchText(path, options = {}, token) {
-  const res = await fetch(API_BASE_URL + path, withAuthHeaders(options, token));
+  let res;
+
+  try {
+    res = await fetch(API_BASE_URL + path, withAuthHeaders(options, token));
+  } catch (err) {
+    throw normalizeNetworkError(err);
+  }
 
   if (!res.ok) {
     await throwApiError(res);

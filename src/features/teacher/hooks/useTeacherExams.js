@@ -25,6 +25,7 @@ export function useTeacherExamsPage() {
 
     setError("");
     setLoadingInit(true);
+
     try {
       const [subj, t] = await Promise.all([
         fetchMyTeacherSubjects(token),
@@ -36,16 +37,12 @@ export function useTeacherExamsPage() {
 
       setGradableSubjects(Array.isArray(g) ? g : []);
       setNonGradableSubjects(Array.isArray(ng) ? ng : []);
+      setTerms(Array.isArray(t) ? t : []);
 
-      setTerms(t || []);
+      setSubjectId(null);
+      setTermId(null);
 
-      const firstTerm = (t || [])[0];
-      setTermId(firstTerm?.termID || firstTerm?.id || null);
-
-      const firstSub =
-        (Array.isArray(g) && g[0]) || (Array.isArray(ng) && ng[0]) || null;
-
-      setSubjectId(firstSub?.subjectID || firstSub?.id || null);
+      setData(null);
     } catch (e) {
       setError(e?.message || "Failed to load data.");
       setGradableSubjects([]);
@@ -53,6 +50,7 @@ export function useTeacherExamsPage() {
       setTerms([]);
       setSubjectId(null);
       setTermId(null);
+      setData(null);
     } finally {
       setLoadingInit(false);
     }
@@ -64,6 +62,7 @@ export function useTeacherExamsPage() {
 
       setError("");
       setLoadingExams(true);
+
       try {
         const res = await fetchTeacherExamsForSubjectAndTerm(sid, tid, token);
         setData(
@@ -83,10 +82,6 @@ export function useTeacherExamsPage() {
     loadInit();
   }, [loadInit]);
 
-  useEffect(() => {
-    if (subjectId && termId) loadExams(subjectId, termId);
-  }, [subjectId, termId, loadExams]);
-
   return {
     gradableSubjects,
     nonGradableSubjects,
@@ -102,6 +97,7 @@ export function useTeacherExamsPage() {
     loadingExams,
     error,
 
+    loadExams,
     reload: () => loadExams(subjectId, termId),
   };
 }

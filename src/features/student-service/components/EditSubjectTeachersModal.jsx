@@ -98,13 +98,13 @@ export function EditSubjectTeachersModal({
     }
   }
 
-  function handleSave() {
-    const cleaned = items
-      .filter((x) => x._op !== "drop")
-      .map(({ _op, ...rest }) => rest);
+ function handleSave() {
+  const cleaned = items
+    .filter((x) => x._op !== "drop" && x._op !== "remove")
+    .map(({ _op, ...rest }) => rest);
 
-    onSave(cleaned, items);
-  }
+  onSave(cleaned, items);
+}
 
   if (!open) return null;
 

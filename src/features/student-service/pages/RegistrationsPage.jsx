@@ -40,19 +40,19 @@ function subjectIdOf(s) {
 function termKeyOf(t, idx) {
   return (
     termIdOf(t) ??
-    `${pick(t, "termName", "TermName", "name", "Name", "title", "Title") || "term"}-${idx}`
+    `${pick(t, "termName", "TermName") || "term"}-${idx}`
   );
 }
 
 function subjectKeyOf(s, idx) {
   return (
     subjectIdOf(s) ??
-    `${pick(s, "code", "Code", "name", "Name") || "subject"}-${idx}`
+    `${pick(s, "code", "Code") || "subject"}-${idx}`
   );
 }
 
 function termLabel(t) {
-  return pick(t, "name", "termName", "TermName", "title", "Title") || "-";
+  return pick(t, "termName", "TermName") || "-";
 }
 
 function subjectLabel(s) {
@@ -130,7 +130,7 @@ export function RegistrationsPage() {
   const { token, role } = useAuth();
   const isStudentService = role === "StudentService";
 
-  const { terms, loading: termsLoading, error: termsError, reload: reloadTerms } = useTerms();
+  const { terms, loading: termsLoading, error: termsError} = useTerms();
 
   const [subjects, setSubjects] = useState([]);
   const [subjectsLoading, setSubjectsLoading] = useState(false);
@@ -194,10 +194,6 @@ export function RegistrationsPage() {
         </div>
 
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-          <button className="btn" onClick={reloadTerms} disabled={termsLoading}>
-            Refresh terms
-          </button>
-
           <button className="btn" onClick={regs.reload} disabled={regs.loading || !canRun}>
             Refresh list
           </button>
