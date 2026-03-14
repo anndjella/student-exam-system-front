@@ -25,16 +25,16 @@ https://github.com/anndjella/student-exam-system
 The frontend is organized by **features and roles**.
 
 src
- ├── api
- ├── auth
- ├── features
- │   ├── student
- │   ├── teacher
- │   ├── student-service
- │   ├── shared
- │   └── home
- ├── utils
- ├── styles
+├── api
+├── auth
+├── features
+│   ├── student
+│   ├── teacher
+│   ├── student-service
+│   ├── shared
+│   └── home
+├── utils
+└── styles
 
 Each feature contains its own components, hooks, and API communication logic.
 
