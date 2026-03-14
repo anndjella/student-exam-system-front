@@ -1,16 +1,94 @@
-# React + Vite
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+# Student Exam System - Frontend
 
-Currently, two official plugins are available:
+This repository contains the **React frontend** for the Student Exam System.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+The application communicates with the backend REST API and provides role‑based interfaces for students, teachers, and student service staff.
 
-## React Compiler
+Backend repository:
+https://github.com/anndjella/student-exam-system
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+# Technology Stack
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- React
+- React Router
+- Vite
+- JavaScript
+- CSS
+
+---
+
+# Application Structure
+
+The frontend is organized by **features and roles**.
+
+src
+ ├── api
+ ├── auth
+ ├── features
+ │   ├── student
+ │   ├── teacher
+ │   ├── student-service
+ │   ├── shared
+ │   └── home
+ ├── utils
+ ├── styles
+
+Each feature contains its own components, hooks, and API communication logic.
+
+---
+
+# Authentication
+
+Authentication is implemented using **JWT tokens**.
+
+The login response contains:
+
+- user role
+- person identifier
+- username
+- mustChangePassword flag
+
+The token is stored in **sessionStorage**.
+
+Users are required to change their password on first login.
+
+---
+
+# System Roles
+
+The system supports three user roles:
+
+- Student Service
+- Teacher
+- Student
+
+All users can also access their **profile page** where they can view their account information.
+
+# API Communication
+
+The frontend communicates with the backend REST API.
+
+Example base URL:
+
+http://localhost:5000
+
+A custom API client is used to normalize server and network errors.
+
+---
+
+# Running the Project
+
+Install dependencies:
+
+npm install
+
+Start development server:
+
+npm run dev
+
+The application will run at:
+
+http://localhost:5173
