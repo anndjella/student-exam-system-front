@@ -124,6 +124,7 @@ export function useSsSubjects() {
           setSkip(0);
         } catch (e) {
           setError(e?.message || "Failed to create subject.");
+          throw e;
         } finally {
           setActionLoading(false);
         }

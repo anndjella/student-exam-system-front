@@ -1,0 +1,164 @@
+.subject-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.subject-card {
+  padding: 12px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  cursor: pointer;
+}
+
+.subject-card-text {
+  min-width: 0;
+}
+
+.subject-card-title {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subjects-page-error {
+  margin-bottom: 12px;
+}
+
+.subjects-section-title {
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.subjects-create-card,
+.subjects-filters-card {
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.subjects-create-form {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr) 120px 160px;
+  gap: 10px;
+  align-items: center;
+}
+
+.subjects-top-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.subjects-tabs {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.subjects-search-group {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  flex: 1 1 auto;
+  min-width: 0;
+  justify-content: flex-end;
+}
+
+.subjects-search-input {
+  width: 240px;
+}
+
+.subjects-exact-input {
+  width: 220px;
+}
+
+.subjects-bottom-row {
+  margin-top: 10px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.subjects-meta {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.subjects-pager-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.subjects-page-size-label {
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.subjects-page-size-select {
+  width: 92px;
+  min-width: 92px;
+  padding: 6px 8px;
+}
+
+.subjects-table {
+  table-layout: fixed;
+}
+
+.subjects-table th,
+.subjects-table td {
+  vertical-align: middle;
+}
+
+.subjects-table tbody td:not(.subjects-teachers-cell) {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* .subjects-table tbody td.subjects-teachers-cell {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  text-overflow: unset;
+  overflow: visible;
+  line-height: 1.35;
+} */
+
+.subjects-name-cell {
+  font-weight: 600;
+}
+
+.subjects-teachers-cell {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  word-break: break-word;
+  line-height: 1.35;
+}
+
+.subjects-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+}
+
+.subjects-actions .btn {
+  width: auto;
+  min-width: 0;
+}

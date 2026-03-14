@@ -20,29 +20,42 @@ export function TeacherRegistrationsViewPanel({ subject }) {
 
   useEffect(() => {
     async function loadTerms() {
+      if (!subject?.id) {
+        setTerms([]);
+        setTermId(null);
+        return;
+      }
+
       setError("");
       setLoadingTerms(true);
+
       try {
-        const data = await fetchTermsForGrading(token);
+        const data = await fetchTermsForGrading(subject.id, token);
         setTerms(data || []);
         const first = (data || [])[0];
         setTermId(first?.termID ?? first?.id ?? null);
       } catch (e) {
-        setError(e?.message || "Failed to load terms.");
+        setError(e?.userMessage || e?.message || "Failed to load terms.");
         setTerms([]);
         setTermId(null);
       } finally {
         setLoadingTerms(false);
       }
     }
+
     loadTerms();
-  }, [token]);
+  }, [subject?.id, token]);
 
   useEffect(() => {
     async function loadRegs() {
-      if (!subject?.id || !termId) return;
+      if (!subject?.id || !termId) {
+        setRows([]);
+        return;
+      }
+
       setError("");
       setLoadingRegs(true);
+
       try {
         const data = await fetchRegistrationsForSubjectAndTerm(subject.id, termId, token);
         const mapped = (data || []).map((r) => ({
@@ -52,12 +65,13 @@ export function TeacherRegistrationsViewPanel({ subject }) {
         }));
         setRows(mapped);
       } catch (e) {
-        setError(e?.message || "Failed to load registrations.");
+        setError(e?.userMessage || e?.message || "Failed to load registrations.");
         setRows([]);
       } finally {
         setLoadingRegs(false);
       }
     }
+
     loadRegs();
   }, [subject?.id, termId, token]);
 

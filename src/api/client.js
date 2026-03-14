@@ -12,7 +12,6 @@ export class ApiError extends Error {
     this.detail = detail;
     this.errorCode = errorCode;
 
-    // svi UI delovi koriste isto
     this.userMessage = finalMessage;
   }
 }
@@ -126,12 +125,12 @@ async function extractProblem(res) {
 async function throwApiError(res) {
   const p = await extractProblem(res);
 
-  throw new ApiError(p.title, {
-    status: res.status,
-    title: p.title,
-    detail: p.detail,
-    errorCode: p.errorCode,
-  });
+ throw new ApiError(p.detail || p.title, {
+  status: res.status,
+  title: p.title,
+  detail: p.detail,
+  errorCode: p.errorCode,
+});
 }
 
 function withAuthHeaders(options = {}, token) {

@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthContext";
 import { apiFetchJson } from "../api/client";
-import "./auth.css";
 
 function validateNewPassword(pw) {
   if (!pw || pw.length < 8) return "Password must be at least 8 characters long.";

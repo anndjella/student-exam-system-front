@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useAuth } from "../../../auth/AuthContext";
 import { useTerms } from "../hooks/useTerms";
 import { createTerm, deleteTerm } from "../../../features/student-service/api/termsSSApi";
-import { CreateTermModal } from "../components/CreateTermModal";
+import { CreateTermModal } from "../../student-service/components/CreateTermModal";
 
 function formatDate(value) {
   if (!value) return "-";
@@ -120,14 +120,14 @@ export function TermsPage() {
         <div className="table-wrap">
           <table className="table terms-table">
             <colgroup>
-              <col /> {/* Term */}
-              <col /> {/* Registration Start */}
-              <col /> {/* Registration End */}
-              <col /> {/* Duration Start */}
-              <col /> {/* Duration End */}
-              {isStudentService && <col style={{ width: 130 }} />} {/* Actions */}
+              <col style={{ width: "32%" }} />
+              <col style={{ width: "17%" }} />
+              <col style={{ width: "17%" }} />
+              <col style={{ width: "17%" }} />
+              <col style={{ width: "17%" }} />
+              {isStudentService && <col style={{ width: 130 }} />}
+              
             </colgroup>
-
             <thead>
               <tr>
                 <th rowSpan={2}>Term</th>

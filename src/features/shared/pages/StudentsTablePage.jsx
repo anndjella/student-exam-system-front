@@ -1,9 +1,8 @@
 import { useCallback, useMemo, useState } from "react";
 import { useAuth } from "../../../auth/AuthContext";
-import { Modal } from "../../shared/components/Modal";
 import { usePagedQuery } from "../hooks/usePagedQuery";
 import { useStudentsApi } from "../hooks/useStudentsApi";
-import {formatDate,formatDateTime} from "../../../utils/datetime";
+import { formatDate, formatDateTime } from "../../../utils/datetime";
 
 /* ---------- small helpers ---------- */
 function idOf(x) {
@@ -48,17 +47,29 @@ function clamp(n, min, max) {
 export function StudentsTablePage({
   title = "Students",
   readOnly = false,
-  allowCreate = true,
   showDeletedTabs = false,
+  allowAdd = false,
+  allowEdit = true,
+  allowDelete = true,
+  onAddStudent,
 }) {
   const { token } = useAuth();
-  const { list, create, update, remove, actionLoading, error: actionError, clearError } = useStudentsApi();
+  const {
+    list,
+    update,
+    remove,
+    actionLoading,
+    error: actionError,
+    clearError,
+  } = useStudentsApi();
 
   const [tab, setTab] = useState("active"); // active | deleted
   const onlyDeleted = showDeletedTabs && tab === "deleted";
 
   const effectiveReadOnly = readOnly || onlyDeleted;
-  const effectiveAllowCreate = allowCreate && !onlyDeleted;
+  const canEdit = !effectiveReadOnly && allowEdit;
+  const canDelete = !effectiveReadOnly && allowDelete;
+  const showActions = canEdit || canDelete;
 
   const fetcher = useCallback(
     (args) => list({ ...args, onlyDeleted }),
@@ -86,14 +97,12 @@ export function StudentsTablePage({
     goNext,
   } = usePagedQuery(fetcher, { take: 20 });
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [mode, setMode] = useState("create"); // create | edit
   const [editing, setEditing] = useState(null);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
+  const [editOpen, setEditOpen] = useState(false);
 
   const [form, setForm] = useState({
-    jmbg: "",
     firstName: "",
     lastName: "",
     indexNumber: "",
@@ -103,69 +112,48 @@ export function StudentsTablePage({
   const showingTo = useMemo(() => clamp(skip + items.length, 0, total), [skip, items.length, total]);
 
   const extraCols = tab === "deleted" ? 1 : 0;
-  const tableColSpan = (effectiveReadOnly ? 7 : 8) + extraCols;
-
-  function openCreate() {
-    if (effectiveReadOnly || !effectiveAllowCreate) return;
-    clearError();
-    setMode("create");
-    setEditing(null);
-    setFormError("");
-    setForm({ jmbg: "", firstName: "", lastName: "", indexNumber: "" });
-    setModalOpen(true);
-  }
+  const tableColSpan = (showActions ? 7 : 6) + extraCols;
 
   function openEdit(s) {
-    if (effectiveReadOnly) return;
+    if (!canEdit) return;
     clearError();
-    setMode("edit");
     setEditing(s);
     setFormError("");
     setForm({
-      jmbg: "",
       firstName: firstNameOf(s),
       lastName: lastNameOf(s),
       indexNumber: indexOf(s),
     });
-    setModalOpen(true);
+    setEditOpen(true);
   }
 
-  function closeModal() {
-    setModalOpen(false);
+  function closeEdit() {
+    setEditOpen(false);
+    setEditing(null);
     setSaving(false);
     setFormError("");
-    setEditing(null);
   }
 
-  async function onSubmit(e) {
+  async function onSubmitEdit(e) {
     e.preventDefault();
-    if (effectiveReadOnly || !token) return;
+    if (!token || !editing || !canEdit) return;
 
     setSaving(true);
     setFormError("");
     clearError();
 
     try {
-      if (mode === "create") {
-        await create({
-          jmbg: form.jmbg,
-          firstName: form.firstName,
-          lastName: form.lastName,
-          indexNumber: form.indexNumber,
-        });
-      } else {
-        const id = idOf(editing);
-        if (!id) throw new Error("Missing student ID.");
+      const id = idOf(editing);
+      if (!id) throw new Error("Missing student ID.");
 
-        await update(id, {
-          firstName: form.firstName || null,
-          lastName: form.lastName || null,
-          indexNumber: form.indexNumber || null,
-        });
-      }
+      await update(id, {
+        firstName: form.firstName || null,
+        lastName: form.lastName || null,
+        indexNumber: form.indexNumber || null,
+      });
 
       await reload();
-      closeModal();
+      closeEdit();
     } catch (err) {
       setFormError(err?.message ?? "Save failed.");
     } finally {
@@ -174,7 +162,7 @@ export function StudentsTablePage({
   }
 
   async function onDelete(s) {
-    if (effectiveReadOnly || !token) return;
+    if (!token || !canDelete) return;
     if (!window.confirm("Soft delete this student?")) return;
 
     clearError();
@@ -196,13 +184,17 @@ export function StudentsTablePage({
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <button className="btn" onClick={reload} disabled={loading || actionLoading}>
             Refresh
           </button>
 
-          {!effectiveReadOnly && effectiveAllowCreate && (
-            <button className="btn btn-primary" onClick={openCreate} disabled={loading || actionLoading}>
+          {allowAdd && !effectiveReadOnly && (
+            <button
+              className="btn btn-primary"
+              onClick={onAddStudent}
+              disabled={loading || actionLoading}
+            >
               Add student
             </button>
           )}
@@ -363,7 +355,7 @@ export function StudentsTablePage({
                 <th style={{ width: 110, textAlign: "center" }}>ECTS</th>
                 <th style={{ width: 110, textAlign: "center" }}>GPA</th>
 
-                {!effectiveReadOnly && (
+                {showActions && (
                   <th style={{ width: 190, textAlign: "center" }}>Actions</th>
                 )}
               </tr>
@@ -413,15 +405,20 @@ export function StudentsTablePage({
                       {fmtGpa(gpaOf(s))}
                     </td>
 
-                    {!effectiveReadOnly && (
+                    {showActions && (
                       <td style={{ textAlign: "center" }}>
                         <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
-                          <button className="btn" onClick={() => openEdit(s)} disabled={actionLoading}>
-                            Edit
-                          </button>
-                          <button className="btn" onClick={() => onDelete(s)} disabled={actionLoading}>
-                            Delete
-                          </button>
+                          {canEdit && (
+                            <button className="btn" onClick={() => openEdit(s)} disabled={actionLoading}>
+                              Edit
+                            </button>
+                          )}
+
+                          {canDelete && (
+                            <button className="btn" onClick={() => onDelete(s)} disabled={actionLoading}>
+                              Delete
+                            </button>
+                          )}
                         </div>
                       </td>
                     )}
@@ -454,59 +451,66 @@ export function StudentsTablePage({
         </div>
       </div>
 
-      {!effectiveReadOnly && (
-        <Modal
-          open={modalOpen}
-          title={mode === "create" ? "Create student" : "Edit student"}
-          onClose={closeModal}
+      {editOpen && canEdit && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) closeEdit();
+          }}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.35)",
+            display: "grid",
+            placeItems: "center",
+            padding: 16,
+            zIndex: 1000,
+          }}
         >
-          <form onSubmit={onSubmit} style={{ display: "grid", gap: 10, maxWidth: 560 }}>
-            {mode === "create" && (
+          <div className="card" style={{ width: "min(720px, 100%)", padding: 14 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+              <div style={{ fontWeight: 900 }}>Edit student</div>
+              <div style={{ flex: 1 }} />
+              <button className="btn" onClick={closeEdit} disabled={saving || actionLoading}>
+                Close
+              </button>
+            </div>
+
+            <form onSubmit={onSubmitEdit} style={{ display: "grid", gap: 10, maxWidth: 560 }}>
               <input
                 className="input"
-                placeholder="JMBG"
-                value={form.jmbg}
-                onChange={(e) => setForm((p) => ({ ...p, jmbg: e.target.value }))}
-                required
+                placeholder="First name"
+                value={form.firstName}
+                onChange={(e) => setForm((p) => ({ ...p, firstName: e.target.value }))}
                 disabled={saving || actionLoading}
               />
-            )}
 
-            <input
-              className="input"
-              placeholder="First name"
-              value={form.firstName}
-              onChange={(e) => setForm((p) => ({ ...p, firstName: e.target.value }))}
-              required={mode === "create"}
-              disabled={saving || actionLoading}
-            />
+              <input
+                className="input"
+                placeholder="Last name"
+                value={form.lastName}
+                onChange={(e) => setForm((p) => ({ ...p, lastName: e.target.value }))}
+                disabled={saving || actionLoading}
+              />
 
-            <input
-              className="input"
-              placeholder="Last name"
-              value={form.lastName}
-              onChange={(e) => setForm((p) => ({ ...p, lastName: e.target.value }))}
-              required={mode === "create"}
-              disabled={saving || actionLoading}
-            />
+              <input
+                className="input"
+                placeholder="Index number (e.g. 2021/0123)"
+                value={form.indexNumber}
+                onChange={(e) => setForm((p) => ({ ...p, indexNumber: e.target.value }))}
+                disabled={saving || actionLoading}
+              />
 
-            <input
-              className="input"
-              placeholder="Index number (e.g. 2021/0123)"
-              value={form.indexNumber}
-              onChange={(e) => setForm((p) => ({ ...p, indexNumber: e.target.value }))}
-              required={mode === "create"}
-              disabled={saving || actionLoading}
-            />
+              <button className="btn btn-primary" disabled={saving || actionLoading}>
+                {saving ? "Saving..." : "Save changes"}
+              </button>
 
-            <button className="btn btn-primary" disabled={saving || actionLoading}>
-              {saving ? "Saving..." : mode === "create" ? "Create" : "Save changes"}
-            </button>
-
-            {formError && <div className="alert-error">{formError}</div>}
-            {!formError && actionError && <div className="alert-error">{actionError}</div>}
-          </form>
-        </Modal>
+              {formError && <div className="alert-error">{formError}</div>}
+              {!formError && actionError && <div className="alert-error">{actionError}</div>}
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

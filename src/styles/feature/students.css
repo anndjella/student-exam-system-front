@@ -1,0 +1,80 @@
+.students-toolbar {
+  display: grid;
+  gap: 12px;
+}
+
+.students-search-wrap {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.students-search-input {
+  width: 100%;
+  padding-right: 40px;
+}
+
+.students-search-clear {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 6px 10px;
+  line-height: 1;
+  width: auto !important;
+  height: auto;
+  min-width: 0;
+}
+
+.students-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.students-toolbar-btn {
+  width: auto !important;
+  min-width: 88px;
+}
+
+.students-page-size {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: #fff;
+  width: auto;
+}
+
+.students-page-size-label {
+  white-space: nowrap;
+}
+
+.students-page-size-select {
+  width: 92px !important;
+  min-width: 92px;
+  padding: 6px 8px;
+}
+
+.students-row-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.students-bottom-pager {
+  margin-top: 12px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.students-inline-badge {
+  width: auto !important;
+}

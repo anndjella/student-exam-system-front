@@ -1,20 +1,62 @@
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../auth/AuthContext";
 
 export function StudServiceLayout() {
-  const { logout } = useAuth();
-  const { payload } = useAuth();
+  const { logout, payload } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const [menuOpen, setMenuOpen] = useState(false);
 
   function handleLogout() {
     logout();
     navigate("/login", { replace: true });
   }
 
+  function closeMenu() {
+    setMenuOpen(false);
+  }
+
+  useEffect(() => {
+    closeMenu();
+  }, [location.pathname]);
+
+  useEffect(() => {
+    function onResize() {
+      if (window.innerWidth > 768) {
+        setMenuOpen(false);
+      }
+    }
+
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
   return (
     <div className="app-shell">
-      <aside className="app-sidebar">
-       <div className="app-brand">
+      <button
+        className="mobile-menu-btn"
+        type="button"
+        onClick={() => setMenuOpen((prev) => !prev)}
+        aria-label={menuOpen ? "Close menu" : "Open menu"}
+        aria-expanded={menuOpen}
+      >
+        <span className="mobile-menu-btn__icon">☰</span>
+        <span className="mobile-menu-btn__text">Menu</span>
+      </button>
+
+      {menuOpen ? (
+        <button
+          className="sidebar-backdrop"
+          type="button"
+          aria-label="Close menu"
+          onClick={closeMenu}
+        />
+      ) : null}
+
+      <aside className={`app-sidebar ${menuOpen ? "open" : ""}`}>
+        <div className="app-brand">
           <div className="app-brand-title">Student service Portal</div>
 
           <div className="app-brand-user">
@@ -24,58 +66,74 @@ export function StudServiceLayout() {
               className="logout-btn logout-btn--small"
               onClick={handleLogout}
               title="Logout"
+              type="button"
             >
               Logout
             </button>
           </div>
         </div>
+
         <nav className="app-menu">
-            <NavLink to="/ss/home" className={({isActive}) => "menu-card" + (isActive ? " active" : "")}>
-             Home
-            </NavLink>
-            
-              <NavLink
-              to="/ss/students"
-              className={({ isActive }) => "menu-card" + (isActive ? " active" : "")}
-            >
-              Students
-            </NavLink>
+          <NavLink
+            to="/ss/home"
+            className={({ isActive }) => "menu-card" + (isActive ? " active" : "")}
+            onClick={closeMenu}
+          >
+            Home
+          </NavLink>
 
-            <NavLink
-              to="/ss/teachers"
-              className={({ isActive }) => "menu-card" + (isActive ? " active" : "")}
-            >
-              Teachers
-            </NavLink>
+          <NavLink
+            to="/ss/students"
+            className={({ isActive }) => "menu-card" + (isActive ? " active" : "")}
+            onClick={closeMenu}
+          >
+            Students
+          </NavLink>
 
-             <NavLink
-              to="/ss/enrollments"
-              className={({ isActive }) => "menu-card" + (isActive ? " active" : "")}
-            >
-              Enrollments
-            </NavLink>
+          <NavLink
+            to="/ss/teachers"
+            className={({ isActive }) => "menu-card" + (isActive ? " active" : "")}
+            onClick={closeMenu}
+          >
+            Teachers
+          </NavLink>
 
-             <NavLink
-              to="/ss/registrations"
-              className={({ isActive }) => "menu-card" + (isActive ? " active" : "")}
-            >
-              Registrations
-            </NavLink>
+          <NavLink
+            to="/ss/enrollments"
+            className={({ isActive }) => "menu-card" + (isActive ? " active" : "")}
+            onClick={closeMenu}
+          >
+            Enrollments
+          </NavLink>
 
-            <NavLink
-              to="/ss/exams"
-              className={({ isActive }) => "menu-card" + (isActive ? " active" : "")}
-            >
-              Exams
-            </NavLink>
+          <NavLink
+            to="/ss/registrations"
+            className={({ isActive }) => "menu-card" + (isActive ? " active" : "")}
+            onClick={closeMenu}
+          >
+            Registrations
+          </NavLink>
 
-            <NavLink to="/ss/terms" className={({isActive}) => "menu-card" + (isActive ? " active" : "")}>
-             Terms
-            </NavLink>
+          <NavLink
+            to="/ss/exams"
+            className={({ isActive }) => "menu-card" + (isActive ? " active" : "")}
+            onClick={closeMenu}
+          >
+            Exams
+          </NavLink>
 
-            <NavLink
+          <NavLink
+            to="/ss/terms"
+            className={({ isActive }) => "menu-card" + (isActive ? " active" : "")}
+            onClick={closeMenu}
+          >
+            Terms
+          </NavLink>
+
+          <NavLink
             to="/ss/subjects"
             className={({ isActive }) => "menu-card" + (isActive ? " active" : "")}
+            onClick={closeMenu}
           >
             Subjects
           </NavLink>
@@ -83,12 +141,11 @@ export function StudServiceLayout() {
           <NavLink
             to="/ss/me"
             className={({ isActive }) => "menu-card" + (isActive ? " active" : "")}
+            onClick={closeMenu}
           >
             My profile
           </NavLink>
-
-          
-        </nav>      
+        </nav>
       </aside>
 
       <main className="app-main">

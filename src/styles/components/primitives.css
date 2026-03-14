@@ -1,0 +1,102 @@
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  min-width: 0;
+}
+
+.btn {
+  appearance: none;
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 0.18s ease, border-color 0.18s ease, opacity 0.18s ease;
+  max-width: 100%;
+  white-space: nowrap;
+}
+
+.btn:hover:not(:disabled) {
+  background: #f8fafc;
+  color: var(--text);
+}
+
+.btn:disabled {
+  opacity: 0.58;
+  cursor: default;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: var(--primaryText);
+  border-color: var(--primary);
+}
+
+.btn-primary:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+
+.btn-ghost {
+  background: transparent;
+}
+
+.logout-btn--small {
+  width: auto;
+  height: 30px;
+  padding: 0 12px;
+  font-size: 12px;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.logout-btn--small:hover:not(:disabled) {
+  background: var(--primary);
+  color: var(--primaryText);
+  border-color: var(--primary);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  max-width: 100%;
+  text-align: center;
+}
+
+.alert-error {
+  background: var(--dangerBg);
+  border: 1px solid var(--dangerBorder);
+  color: var(--dangerText);
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 14px;
+}
+
+.alert-success {
+  background: var(--successBg);
+  border: 1px solid var(--successBorder);
+  color: var(--successText);
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 14px;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}

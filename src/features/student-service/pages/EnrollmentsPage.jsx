@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../../auth/AuthContext";
-import { fetchActiveSubjects } from "../api/subjectsSSApi";
+import {fetchAllWithInactive} from "../api/subjectsSSApi";
 import {
   bulkEnrollByIndexYear,
   createEnrollmentSingle,
@@ -9,7 +9,7 @@ import {
   listEnrollmentsBySubject,
 } from "../api/enrollmentsSSApi";
 import { AddEnrollmentModal } from "../components/AddEnrollmentModal";
-import {formatDateTime} from "../../../utils/datetime";
+import { formatDateTime } from "../../../utils/datetime";
 
 /* ---------- small helpers ---------- */
 const pick = (obj, ...keys) => {
@@ -78,7 +78,9 @@ function normalizeSubjectsResponse(res) {
 
   if (res && typeof res === "object") {
     const vals = Object.values(res);
-    const directSubjects = vals.find((v) => Array.isArray(v) && v.some((x) => x && (x.code || x.Code)));
+    const directSubjects = vals.find(
+      (v) => Array.isArray(v) && v.some((x) => x && (x.code || x.Code))
+    );
     if (Array.isArray(directSubjects)) return directSubjects;
 
     const groupArrays = vals.filter(Array.isArray);
@@ -299,35 +301,34 @@ export function EnrollmentsPage() {
   }
 
   function openAddModal() {
-   setModalError("");
-   setModalSuccess("");
-   setAddOpen(true);
+    setModalError("");
+    setModalSuccess("");
+    setAddOpen(true);
   }
 
   function closeAddModal() {
-     setAddOpen(false);
-  setModalError("");
-  setModalSuccess("");
+    setAddOpen(false);
+    setModalError("");
+    setModalSuccess("");
   }
 
- async function onCreateSingle(payload) {
-  setCreatingSingle(true);
- setModalError("");
-  setModalSuccess("");
+  async function onCreateSingle(payload) {
+    setCreatingSingle(true);
+    setModalError("");
+    setModalSuccess("");
 
-  try {
-    await createEnrollmentSingle(payload, token);
-    setModalSuccess("Enrollment added successfully.");
+    try {
+      await createEnrollmentSingle(payload, token);
+      setModalSuccess("Enrollment added successfully.");
 
-    if (tab === "all" && hasSearchContext) refreshAll();
-  } catch (e) {
-    const msg = e?.userMessage || e?.message || "Create failed.";
-    throw new Error(msg);
-  } finally {
-    setCreatingSingle(false);
+      if (tab === "all" && hasSearchContext) refreshAll();
+    } catch (e) {
+      const msg = e?.userMessage || e?.message || "Create failed.";
+      throw new Error(msg);
+    } finally {
+      setCreatingSingle(false);
+    }
   }
-}
-
 
   /* ---------- BULK ENROLL ---------- */
   const [loadingSubjects, setLoadingSubjects] = useState(false);
@@ -353,7 +354,7 @@ export function EnrollmentsPage() {
       setSubjectsError("");
 
       try {
-        const res = await fetchActiveSubjects(token);
+        const res = await fetchAllWithInactive(token);
         if (!alive) return;
         setActiveSubjects(normalizeSubjectsResponse(res));
       } catch (e) {
@@ -447,12 +448,14 @@ export function EnrollmentsPage() {
   return (
     <div className="container">
       <div className="page-header">
-        <div>
+        <div className="page-header-text">
           <h1 className="page-title">Enrollments</h1>
-          <div className="page-subtitle">Manage enrollments and bulk enroll students by index year.</div>
+          <div className="page-subtitle">
+            Manage enrollments and bulk enroll students by index year.
+          </div>
         </div>
 
-        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+        <div className="page-header-actions">
           <button
             className="btn btn-primary"
             type="button"
@@ -477,13 +480,13 @@ export function EnrollmentsPage() {
       </div>
 
       {actionError && !addOpen ? (
-        <div className="alert-error" style={{ marginBottom: 12 }}>
+        <div className="alert-error exams-error-block">
           {prettyErrorMessage(actionError)}
         </div>
       ) : null}
 
-      <div className="card" style={{ padding: 12, marginBottom: 12 }}>
-        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+      <div className="card filters-card">
+        <div className="toolbar">
           <button
             className={`btn ${tab === "all" ? "btn-primary" : ""}`}
             type="button"
@@ -501,55 +504,69 @@ export function EnrollmentsPage() {
           >
             Bulk enroll
           </button>
-
-          <div style={{ flex: 1 }} />
-
-          {tab === "all" ? (
-            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-              <input
-                className="input"
-                style={{ width: 220 }}
-                placeholder="Student index..."
-                value={studentIndexFilter}
-                onChange={(e) => setStudentIndexFilter(e.target.value)}
-                onKeyDown={onSearchKeyDown}
-                disabled={loadingAll || actionLoading}
-              />
-              <input
-                className="input"
-                style={{ width: 180 }}
-                placeholder="Subject code..."
-                value={subjectCodeFilter}
-                onChange={(e) => setSubjectCodeFilter(e.target.value)}
-                onKeyDown={onSearchKeyDown}
-                disabled={loadingAll || actionLoading}
-              />
-
-              <button className="btn" type="button" onClick={runSearchAll} disabled={!canSearchAll || loadingAll || actionLoading}>
-                Search
-              </button>
-
-              <button className="btn btn-ghost" type="button" onClick={clearAllSearch} disabled={loadingAll || actionLoading}>
-                Clear
-              </button>
-            </div>
-          ) : null}
         </div>
+
+        {tab === "all" ? (
+          <>
+            <div className="filters-grid filters-grid-2" style={{ marginTop: 12 }}>
+              <div className="filter-field">
+                <div className="page-subtitle filter-label">Student index</div>
+                <input
+                  className="input"
+                  placeholder="Student index..."
+                  value={studentIndexFilter}
+                  onChange={(e) => setStudentIndexFilter(e.target.value)}
+                  onKeyDown={onSearchKeyDown}
+                  disabled={loadingAll || actionLoading}
+                />
+              </div>
+
+              <div className="filter-field">
+                <div className="page-subtitle filter-label">Subject code</div>
+                <input
+                  className="input"
+                  placeholder="Subject code..."
+                  value={subjectCodeFilter}
+                  onChange={(e) => setSubjectCodeFilter(e.target.value)}
+                  onKeyDown={onSearchKeyDown}
+                  disabled={loadingAll || actionLoading}
+                />
+              </div>
+            </div>
+
+            <div className="filters-footer">
+              <div className="page-subtitle filters-status">
+                Enter student index or subject code, then click Search.
+              </div>
+
+              <div className="filters-actions">
+                <button
+                  className="btn btn-primary"
+                  type="button"
+                  onClick={runSearchAll}
+                  disabled={!canSearchAll || loadingAll || actionLoading}
+                >
+                  Search
+                </button>
+
+                <button
+                  className="btn btn-ghost"
+                  type="button"
+                  onClick={clearAllSearch}
+                  disabled={loadingAll || actionLoading}
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+          </>
+        ) : null}
       </div>
 
-      {/* ALL TAB */}
       {tab === "all" ? (
-        <div className="card" style={{ padding: 12 }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: 10,
-              flexWrap: "wrap",
-            }}
-          >
-            <div className="page-subtitle">
+        <div className="card filters-card">
+          <div className="filters-footer" style={{ marginTop: 0 }}>
+            <div className="page-subtitle filters-status">
               {!searchedOnce
                 ? "Enter student index or subject code, then click Search."
                 : !hasSearchContext
@@ -557,13 +574,25 @@ export function EnrollmentsPage() {
                 : `Showing ${itemsAll.length} of ${totalAll} (page ${pageAll}/${totalPagesAll})`}
             </div>
 
-            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-              <button className="btn" type="button" onClick={prevAll} disabled={!hasSearchContext || !canPrevAll || loadingAll || actionLoading}>
+            <div className="filters-actions">
+              <button
+                className="btn"
+                type="button"
+                onClick={prevAll}
+                disabled={!hasSearchContext || !canPrevAll || loadingAll || actionLoading}
+              >
                 Prev
               </button>
-              <button className="btn" type="button" onClick={nextAll} disabled={!hasSearchContext || !canNextAll || loadingAll || actionLoading}>
+
+              <button
+                className="btn"
+                type="button"
+                onClick={nextAll}
+                disabled={!hasSearchContext || !canNextAll || loadingAll || actionLoading}
+              >
                 Next
               </button>
+
               <span className="badge">Page size: {take}</span>
             </div>
           </div>
@@ -614,7 +643,12 @@ export function EnrollmentsPage() {
                           <td>{pick(e, "subjectName", "SubjectName") || "-"}</td>
                           <td className="mono">{formatDateTime(createdAt)}</td>
                           <td>
-                            <button className="btn" type="button" onClick={() => onDeleteEnrollment(e)} disabled={actionLoading || loadingAll}>
+                            <button
+                              className="btn"
+                              type="button"
+                              onClick={() => onDeleteEnrollment(e)}
+                              disabled={actionLoading || loadingAll}
+                            >
                               Delete
                             </button>
                           </td>
@@ -629,24 +663,23 @@ export function EnrollmentsPage() {
         </div>
       ) : null}
 
-      {/* BULK TAB */}
       {tab === "bulk" ? (
         <>
           {subjectsError ? (
-            <div className="alert-error" style={{ marginBottom: 12 }}>
+            <div className="alert-error exams-error-block">
               {prettyErrorMessage(subjectsError)}
             </div>
           ) : null}
 
           {bulkError ? (
-            <div className="alert-error" style={{ marginBottom: 12 }}>
+            <div className="alert-error exams-error-block">
               {prettyErrorMessage(bulkError)}
             </div>
           ) : null}
 
           {result ? (
-            <div className="card" style={{ padding: 12, marginBottom: 12 }}>
-              <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <div className="card filters-card">
+              <div className="toolbar">
                 <span className="badge">
                   Students matched: <span className="mono">{studentsMatched}</span>
                 </span>
@@ -660,60 +693,78 @@ export function EnrollmentsPage() {
             </div>
           ) : null}
 
-          <div className="card" style={{ padding: 12, marginBottom: 12 }}>
-            <form onSubmit={onSubmitBulk} style={{ display: "grid", gap: 10, maxWidth: 820 }}>
-              <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-                <input
-                  className="input"
-                  style={{ width: 220 }}
-                  inputMode="numeric"
-                  placeholder="Index start year (e.g. 2023)"
-                  value={indexStartYear}
-                  onChange={(e) => setIndexStartYear(e.target.value)}
-                />
-                <div style={{ flex: 1 }} />
-                <button className="btn btn-primary" disabled={submittingBulk || loadingSubjects}>
-                  {submittingBulk ? "Creating..." : "Bulk enroll"}
-                </button>
+          <div className="card filters-card">
+            <form onSubmit={onSubmitBulk} className="bulk-form">
+              <div className="filters-grid filters-grid-2">
+                <div className="filter-field">
+                  <div className="page-subtitle filter-label">Index start year</div>
+                  <input
+                    className="input"
+                    inputMode="numeric"
+                    placeholder="Index start year (e.g. 2023)"
+                    value={indexStartYear}
+                    onChange={(e) => setIndexStartYear(e.target.value)}
+                  />
+                </div>
+
+                <div className="filter-field bulk-form-action">
+                  <div className="page-subtitle filter-label">Action</div>
+                  <button
+                    className="btn btn-primary"
+                    type="submit"
+                    disabled={submittingBulk || loadingSubjects}
+                  >
+                    {submittingBulk ? "Creating..." : "Bulk enroll"}
+                  </button>
+                </div>
               </div>
 
-              <div className="page-subtitle">
+              <div className="page-subtitle" style={{ marginTop: 12 }}>
                 Selected <span className="mono">{selected.size}</span> subject(s)
               </div>
             </form>
           </div>
 
-          <div className="card" style={{ padding: 12 }}>
-            <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-              <input
-                className="input"
-                style={{ width: 320 }}
-                placeholder="Search subjects..."
-                value={searchSubjects}
-                onChange={(e) => setSearchSubjects(e.target.value)}
-                disabled={loadingSubjects}
-              />
+              <div className="card filters-card">
+      <div className="bulk-toolbar">
+            <input
+              className="input bulk-search"
+              placeholder="Search subjects..."
+              value={searchSubjects}
+              onChange={(e) => setSearchSubjects(e.target.value)}
+              disabled={loadingSubjects}
+            />
 
-              <button className="btn" type="button" onClick={selectAllFiltered} disabled={loadingSubjects}>
-                Select all (filtered)
-              </button>
-
-              <button className="btn" type="button" onClick={clearSelection} disabled={selected.size === 0}>
-                Clear selection
-              </button>
-
-              <div style={{ flex: 1 }} />
-
-              <span className="badge">Subjects: {loadingSubjects ? "Loading..." : filteredSubjects.length}</span>
+            <div className="bulk-count">
+              Subjects: {loadingSubjects ? "..." : filteredSubjects.length}
             </div>
 
-            <div style={{ marginTop: 12 }}>
+            <button
+              className="btn"
+              type="button"
+              onClick={selectAllFiltered}
+              disabled={loadingSubjects}
+            >
+              Select all (filtered)
+            </button>
+
+            <button
+              className="btn"
+              type="button"
+              onClick={clearSelection}
+              disabled={selected.size === 0}
+            >
+              Clear selection
+            </button>
+          </div>
+
+          <div style={{ marginTop: 12 }}>
               {loadingSubjects ? (
                 <div className="page-subtitle">Loading subjects...</div>
               ) : filteredSubjects.length === 0 ? (
                 <div className="page-subtitle">No subjects.</div>
               ) : (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 8 }}>
+                <div className="subject-grid">
                   {filteredSubjects.map((s) => {
                     const id = pick(s, "id", "ID");
                     const checked = id ? selected.has(id) : false;
@@ -721,12 +772,16 @@ export function EnrollmentsPage() {
                     return (
                       <label
                         key={id || displayOfSubject(s)}
-                        className="card"
-                        style={{ padding: 10, display: "flex", gap: 10, alignItems: "center", cursor: "pointer" }}
+                        className="card subject-card"
                       >
-                        <input type="checkbox" checked={checked} onChange={() => id && toggleSubject(id)} disabled={!id} />
-                        <div style={{ minWidth: 0 }}>
-                          <div style={{ fontWeight: 600 }}>{displayOfSubject(s)}</div>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => id && toggleSubject(id)}
+                          disabled={!id}
+                        />
+                        <div className="subject-card-text">
+                          <div className="subject-card-title">{displayOfSubject(s)}</div>
                         </div>
                       </label>
                     );
@@ -739,12 +794,12 @@ export function EnrollmentsPage() {
       ) : null}
 
       <AddEnrollmentModal
-       open={addOpen}
-       creating={creatingSingle}
-       error={modalError}
-       success={modalSuccess}
-       onClose={closeAddModal}
-       onCreate={onCreateSingle}
+        open={addOpen}
+        creating={creatingSingle}
+        error={modalError}
+        success={modalSuccess}
+        onClose={closeAddModal}
+        onCreate={onCreateSingle}
       />
     </div>
   );

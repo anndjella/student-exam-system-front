@@ -1,0 +1,102 @@
+.container {
+  padding: 18px;
+  min-width: 0;
+}
+
+.page,
+.page-content,
+.panel,
+.section,
+.content,
+.content-area,
+.main-content {
+  min-width: 0;
+}
+
+.page-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--text);
+}
+
+.center {
+  text-align: center;
+}
+
+.page-subtitle {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.page-header-text,
+.page-header-actions {
+  min-width: 0;
+}
+
+.page-header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.toolbar > * {
+  min-width: 0;
+}
+
+.toolbar .input,
+.toolbar select.input {
+  flex: 0 1 auto;
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.form-grid,
+.grid-2,
+.two-col {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.grid-3,
+.three-col {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.form-actions,
+.filters-row,
+.actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}

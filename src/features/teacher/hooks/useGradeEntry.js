@@ -25,31 +25,52 @@ export function useGradeEntry(subjectId) {
   const [error, setError] = useState("");
 
   const loadTerms = useCallback(async () => {
-    if (!token) return;
+    if (!token || !subjectId) {
+      setTerms([]);
+      setTermId(null);
+      return;
+    }
 
     setError("");
     setLoadingTerms(true);
-    try {
-      const data = await fetchTermsForGrading(token);
 
-      setTerms(data || []);
-      const first = (data || [])[0];
-      setTermId(first?.termID || first?.id || null);
+    try {
+      const data = await fetchTermsForGrading(subjectId, token);
+
+      const list = data || [];
+      setTerms(list);
+
+      setTermId((current) => {
+        if (!list.length) return null;
+
+        const exists = list.some(
+          (t) => Number(t?.termID ?? t?.id) === Number(current)
+        );
+
+        if (exists) return current;
+
+        const first = list[0];
+        return first?.termID ?? first?.id ?? null;
+      });
     } catch (e) {
-      setError(e?.message || "Failed to load terms.");
+      setError(e?.userMessage || e?.message || "Failed to load terms.");
       setTerms([]);
       setTermId(null);
     } finally {
       setLoadingTerms(false);
     }
-  }, [token]);
+  }, [token, subjectId]);
 
   const loadRegistrations = useCallback(
     async (sid, tid) => {
-      if (!token || !sid || !tid) return;
+      if (!token || !sid || !tid) {
+        setRows([]);
+        return;
+      }
 
       setError("");
       setLoadingRegs(true);
+
       try {
         const data = await fetchRegistrationsForSubjectAndTerm(sid, tid, token);
 
@@ -77,7 +98,7 @@ export function useGradeEntry(subjectId) {
 
         setRows(mapped);
       } catch (e) {
-        setError(e?.message || "Failed to load registrations.");
+        setError(e?.userMessage || e?.message || "Failed to load registrations.");
         setRows([]);
       } finally {
         setLoadingRegs(false);
@@ -91,13 +112,18 @@ export function useGradeEntry(subjectId) {
   }, [loadTerms]);
 
   useEffect(() => {
-    if (subjectId && termId) loadRegistrations(subjectId, termId);
+    if (!subjectId || !termId) {
+      setRows([]);
+      return;
+    }
+
+    loadRegistrations(subjectId, termId);
   }, [subjectId, termId, loadRegistrations]);
 
   const stats = useMemo(() => {
     const total = rows.length;
     const entered = rows.filter((r) => r.hasExam).length;
-    const locked = rows.some((r) => r.locked);
+    const locked = rows.length > 0 && rows.every((r) => r.locked);
     return { total, entered, locked };
   }, [rows]);
 
@@ -113,11 +139,13 @@ export function useGradeEntry(subjectId) {
 
   async function saveOne(studentId) {
     if (!token || !subjectId || !termId) return;
+
     const row = rows.find((r) => r.studentId === studentId);
     if (!row || row.locked) return;
 
     setError("");
     setSaving(true);
+
     try {
       const payload = {
         Date: row.date || null,
@@ -149,7 +177,7 @@ export function useGradeEntry(subjectId) {
 
       await loadRegistrations(subjectId, termId);
     } catch (e) {
-      setError(e?.message || "Failed to save exam.");
+      setError(e?.userMessage || e?.message || "Failed to save exam.");
     } finally {
       setSaving(false);
     }
@@ -160,6 +188,7 @@ export function useGradeEntry(subjectId) {
 
     setError("");
     setSaving(true);
+
     try {
       for (const r of rows) {
         if (r.locked) continue;
@@ -186,7 +215,7 @@ export function useGradeEntry(subjectId) {
 
       await loadRegistrations(subjectId, termId);
     } catch (e) {
-      setError(e?.message || "Failed to save exams.");
+      setError(e?.userMessage || e?.message || "Failed to save exams.");
     } finally {
       setSaving(false);
     }
@@ -202,11 +231,12 @@ export function useGradeEntry(subjectId) {
 
     setError("");
     setLocking(true);
+
     try {
       await lockExams({ SubjectID: subjectId, TermID: termId }, token);
       await loadRegistrations(subjectId, termId);
     } catch (e) {
-      setError(e?.message || "Failed to lock exams.");
+      setError(e?.userMessage || e?.message || "Failed to lock exams.");
     } finally {
       setLocking(false);
     }

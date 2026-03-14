@@ -12,19 +12,36 @@ const pick = (obj, ...keys) => {
 };
 
 function termLabel(t) {
-  return pick(t, "name", "termName", "TermName") || "Term";
+  return pick(t, "termName", "TermName", "name", "Name") || "Term";
 }
 
 function termIdOf(t) {
   return Number(pick(t, "termID", "TermID", "id", "ID") || 0);
 }
 
-function canEnterGradesOf(t) {
-  if (!t) return true;
-  const v = pick(t, "canEnterGrades", "CanEnterGrades");
-  if (typeof v === "boolean") return v;
-  if (typeof v === "string") return v.trim().toLowerCase() === "true";
-  return true;
+function normalizeDateOnly(value) {
+  if (!value) return "";
+  return String(value).slice(0, 10);
+}
+
+function todayDateOnly() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function canEnterGradesOf(term) {
+  if (!term) return false;
+
+  const start = normalizeDateOnly(pick(term, "startDate", "StartDate"));
+  const end = normalizeDateOnly(pick(term, "endDate", "EndDate"));
+
+  if (!start || !end) return false;
+
+  const today = todayDateOnly();
+  return today >= start && today <= end;
 }
 
 function hasDateValue(dateStr) {
@@ -53,6 +70,7 @@ export function GradeEntryPanel({ subject }) {
   const lockedAll = !!stats?.locked;
 
   const termOptions = useMemo(() => terms || [], [terms]);
+
   const effectiveTerm = useMemo(() => {
     if (!termOptions.length) return null;
 
@@ -66,16 +84,12 @@ export function GradeEntryPanel({ subject }) {
   }, [termId, termOptions]);
 
   const canEnterGrades = canEnterGradesOf(effectiveTerm);
-  const gradeEntryBlocked = !lockedAll && canEnterGrades === false;
+  const gradeEntryBlocked = !lockedAll && !canEnterGrades;
 
-  const [bulkDate, setBulkDate] = useState("");
-
-  // Table controls
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
   const pageSize = 12;
 
-  // Drawer controls
   const [selectedId, setSelectedId] = useState(null);
 
   const filtered = useMemo(() => {
@@ -106,27 +120,12 @@ export function GradeEntryPanel({ subject }) {
   }, [rows, selectedId]);
 
   function isRowDisabled(r) {
-    if (lockedAll || gradeEntryBlocked || r.locked) return true;
-    return false;
+    return lockedAll || gradeEntryBlocked || r.locked;
   }
-
- function applyBulkDate() {
-  if (!bulkDate) return;
-  if (lockedAll || gradeEntryBlocked) return;
-
-  for (const r of rows) {
-    if (r.locked) continue;
-    if (r.hasExam) continue;
-    if (hasDateValue(r.date)) continue;
-
-    updateRow(r.studentId, { date: bulkDate });
-  }
-}
 
   async function onSaveAll() {
     if (lockedAll || gradeEntryBlocked) return;
 
-    // Minimal validation: require date for non-locked rows
     const invalid = rows.some((r) => !r.locked && !hasDateValue(r.date));
     if (invalid) return;
 
@@ -161,7 +160,7 @@ export function GradeEntryPanel({ subject }) {
 
       {gradeEntryBlocked ? (
         <div className="page-subtitle" style={{ marginBottom: 10 }}>
-          Grade entry will be available when the exam period starts for the selected term.
+          Grade entry will be available only while today is within the selected term exam period.
         </div>
       ) : null}
 
@@ -173,10 +172,13 @@ export function GradeEntryPanel({ subject }) {
 
       <div className="toolbar">
         <select
-          className="input"
-          style={{ width: 320 }}
+          className="input grade-toolbar-select"
           value={termId || termIdOf(effectiveTerm) || ""}
-          onChange={(e) => { setTermId(Number(e.target.value)); setPage(1); setSelectedId(null); }}
+          onChange={(e) => {
+            setTermId(Number(e.target.value));
+            setPage(1);
+            setSelectedId(null);
+          }}
           disabled={loadingTerms}
         >
           {termOptions.map((t) => (
@@ -187,10 +189,12 @@ export function GradeEntryPanel({ subject }) {
         </select>
 
         <input
-          className="input"
-          style={{ width: 260 }}
+          className="input grade-toolbar-select"
           value={query}
-          onChange={(e) => { setQuery(e.target.value); setPage(1); }}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setPage(1);
+          }}
           placeholder="Search by name or index..."
           disabled={loadingRegs}
         />
@@ -201,21 +205,26 @@ export function GradeEntryPanel({ subject }) {
           Registrations: <b>{stats.total}</b> · Entered: <b>{stats.entered}</b>
         </div>
 
-        <button className="btn" type="button" onClick={lock} disabled={locking || saving || lockedAll || loadingRegs || gradeEntryBlocked}>
+        <button
+          className="btn"
+          type="button"
+          onClick={lock}
+          disabled={locking || saving || lockedAll || loadingRegs || gradeEntryBlocked}
+        >
           {lockedAll ? "Locked" : locking ? "Locking..." : "Lock"}
         </button>
 
-        <button className="btn btn-primary" type="button" onClick={onSaveAll} disabled={saving || lockedAll || gradeEntryBlocked || loadingRegs}>
+        <button
+          className="btn btn-primary"
+          type="button"
+          onClick={onSaveAll}
+          disabled={saving || lockedAll || gradeEntryBlocked || loadingRegs}
+        >
           {saving ? "Saving..." : "Save all"}
         </button>
       </div>
 
       <div className="toolbar" style={{ marginTop: 10 }}>
-        <input className="input" type="date" value={bulkDate} onChange={(e) => setBulkDate(e.target.value)} disabled={lockedAll || gradeEntryBlocked} />
-        <button className="btn" type="button" onClick={applyBulkDate} disabled={lockedAll || gradeEntryBlocked || !bulkDate}>
-          Apply date to all (new only)
-        </button>
-
         <div style={{ flex: 1 }} />
 
         <div className="pager">
@@ -252,11 +261,15 @@ export function GradeEntryPanel({ subject }) {
           <tbody>
             {loadingRegs ? (
               <tr>
-                <td colSpan={5} style={{ padding: 10 }}>Loading registrations...</td>
+                <td colSpan={5} style={{ padding: 10 }}>
+                  Loading registrations...
+                </td>
               </tr>
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={5} style={{ padding: 10 }}>No registrations for this subject and term.</td>
+                <td colSpan={5} style={{ padding: 10 }}>
+                  No registrations for this subject and term.
+                </td>
               </tr>
             ) : (
               pagedRows.map((r) => {

@@ -10,8 +10,8 @@ export async function listSubjectsPaged({ active, skip, take, query }, token) {
   return await apiFetchJson(`/api/subjects?${qs.toString()}`, { method: "GET" }, token);
 }
 
-export async function fetchActiveSubjects(token) {
-  return await apiFetchJson("/api/subjects/active", { method: "GET" }, token);
+export async function fetchAllWithInactive(token) {
+  return await apiFetchJson("/api/subjects/all", { method: "GET" }, token);
 }
 
 export async function fetchSubjectByCode(code, token) {

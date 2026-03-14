@@ -1,4 +1,5 @@
-import {formatDate,formatDateTime} from "../../../utils/datetime";
+import { formatDate, formatDateTime } from "../../../utils/datetime";
+
 function formatGrade(v) {
   if (v === null || v === undefined) return "N.I.";
   if (typeof v === "string" && v.trim() === "") return "N.I.";
@@ -9,6 +10,14 @@ function shortNote(note) {
   const s = (note || "").trim();
   if (!s) return "-";
   return s.length > 40 ? s.slice(0, 40) + "..." : s;
+}
+
+function pick(obj, ...keys) {
+  for (const k of keys) {
+    const v = obj?.[k];
+    if (v !== undefined && v !== null && v !== "") return v;
+  }
+  return "";
 }
 
 export default function TeacherExamTable({ exams, showTeacher }) {
@@ -33,33 +42,45 @@ export default function TeacherExamTable({ exams, showTeacher }) {
           <tbody>
             {list.length === 0 ? (
               <tr>
-                <td colSpan={showTeacher ? 6 : 5} className="center">
+                <td colSpan={showTeacher ? 7 : 6} className="center">
                   No exams
                 </td>
               </tr>
             ) : (
               list.map((e) => {
-                const id = e.id ?? e.ID;
+                const id = pick(e, "id", "ID");
+                const studentFullName = pick(e, "studentFullName", "StudentFullName");
+                const studentIndexNum = pick(e, "studentIndexNum", "StudentIndexNum");
+                const examDate = pick(e, "examDate", "ExamDate");
+                const grade = pick(e, "grade", "Grade");
+                const note = pick(e, "note", "Note");
+                const signedAt = pick(e, "signedAt", "SignedAt");
+                const enteredByTeacherName = pick(e,"enteredByTeacherName","EnteredByTeacherName"
+                );
+                const enteredByEmployeeNumber = pick(e,"enteredByEmployeeNumber","EnteredByEmployeeNumber"
+                );
 
                 return (
                   <tr key={id}>
-                    <td>{e.studentFullName}</td>
-                    <td className="mono">{e.studentIndexNum}</td>
-                    <td>{e.examDate ?? "-"}</td>
-                    <td>{formatGrade(e.grade)}</td>
+                    <td>{studentFullName || "-"}</td>
+                    <td className="mono">{studentIndexNum || "-"}</td>
+                    <td>{examDate ?? "-"}</td>
+                    <td>{formatGrade(grade)}</td>
 
-                    <td
-                      className="note-col"
-                      title={(e.note || "").trim()}
-                    >
-                      {shortNote(e.note)}
+                    <td className="note-col" title={(note || "").trim()}>
+                      {shortNote(note)}
                     </td>
-                    <td>{e.signedAt ? formatDateTime(e.signedAt) : "-"}</td>
+
+                    <td>{signedAt ? formatDateTime(signedAt) : "-"}</td>
 
                     {showTeacher && (
                       <td>
-                        {e.enteredByTeacherName
-                          ? `${e.enteredByTeacherName} (${e.enteredByEmployeeNumber ?? "-"})`
+                        {enteredByTeacherName
+                          ? `${enteredByTeacherName}${
+                              enteredByEmployeeNumber
+                                ? ` (${enteredByEmployeeNumber})`
+                                : ""
+                            }`
                           : "-"}
                       </td>
                     )}

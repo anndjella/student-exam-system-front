@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "../../../auth/AuthContext";
 import { useTerms } from "../../shared/hooks/useTerms";
-import { fetchActiveSubjects } from "../api/subjectsSSApi";
+import {fetchAllWithInactive} from "../api/subjectsSSApi";
 import { useSsRegistrations } from "../hooks/useSSRegistrations";
-import {formatDateTime} from "../../../utils/datetime";
+import { formatDateTime } from "../../../utils/datetime";
 
 /* helpers */
 const pick = (obj, ...keys) => {
@@ -25,10 +25,6 @@ function prettyErrorMessage(message) {
   }
 }
 
-function idOf(x) {
-  return pick(x, "id", "ID");
-}
-
 function termIdOf(t) {
   return pick(t, "termID", "TermID", "id", "ID");
 }
@@ -38,17 +34,11 @@ function subjectIdOf(s) {
 }
 
 function termKeyOf(t, idx) {
-  return (
-    termIdOf(t) ??
-    `${pick(t, "termName", "TermName") || "term"}-${idx}`
-  );
+  return termIdOf(t) ?? `${pick(t, "termName", "TermName") || "term"}-${idx}`;
 }
 
 function subjectKeyOf(s, idx) {
-  return (
-    subjectIdOf(s) ??
-    `${pick(s, "code", "Code") || "subject"}-${idx}`
-  );
+  return subjectIdOf(s) ?? `${pick(s, "code", "Code") || "subject"}-${idx}`;
 }
 
 function termLabel(t) {
@@ -102,7 +92,9 @@ function normalizeSubjectsResponse(res) {
 
   if (res && typeof res === "object") {
     const vals = Object.values(res);
-    const directSubjects = vals.find((v) => Array.isArray(v) && v.some((x) => x && (x.code || x.Code)));
+    const directSubjects = vals.find(
+      (v) => Array.isArray(v) && v.some((x) => x && (x.code || x.Code))
+    );
     if (Array.isArray(directSubjects)) return directSubjects;
 
     const groupArrays = vals.filter(Array.isArray);
@@ -130,7 +122,7 @@ export function RegistrationsPage() {
   const { token, role } = useAuth();
   const isStudentService = role === "StudentService";
 
-  const { terms, loading: termsLoading, error: termsError} = useTerms();
+  const { terms, loading: termsLoading, error: termsError } = useTerms();
 
   const [subjects, setSubjects] = useState([]);
   const [subjectsLoading, setSubjectsLoading] = useState(false);
@@ -138,6 +130,7 @@ export function RegistrationsPage() {
 
   const regs = useSsRegistrations(20);
   const canRun = Boolean(regs.canSearch);
+  const items = regs.items || [];
 
   useEffect(() => {
     let alive = true;
@@ -149,7 +142,7 @@ export function RegistrationsPage() {
       setSubjectsError("");
 
       try {
-        const res = await fetchActiveSubjects(token);
+        const res = await fetchAllWithInactive(token);
         if (!alive) return;
         setSubjects(normalizeSubjectsResponse(res));
       } catch (e) {
@@ -183,27 +176,32 @@ export function RegistrationsPage() {
     );
   }
 
-  const items = regs.items || [];
-
   return (
     <div className="container">
       <div className="page-header">
-        <div>
+        <div className="page-header-text">
           <h1 className="page-title">Registrations</h1>
-          <div className="page-subtitle">Choose term and subject, optionally filter by student index.</div>
+          <div className="page-subtitle">
+            Choose term and subject, optionally filter by student index.
+          </div>
         </div>
 
-        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-          <button className="btn" onClick={regs.reload} disabled={regs.loading || !canRun}>
+        <div className="page-header-actions">
+          <button
+            className="btn"
+            onClick={regs.reload}
+            disabled={regs.loading || !canRun}
+            type="button"
+          >
             Refresh list
           </button>
         </div>
       </div>
 
-      <div className="card" style={{ padding: 12, marginBottom: 12 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
-          <div style={{ display: "grid", gap: 6 }}>
-            <div className="page-subtitle">Term</div>
+      <div className="card filters-card">
+        <div className="filters-grid filters-grid-3">
+          <div className="filter-field">
+            <div className="page-subtitle filter-label">Term</div>
             <select
               className="input"
               value={regs.termId}
@@ -220,11 +218,13 @@ export function RegistrationsPage() {
                 );
               })}
             </select>
-            {termsError ? <div className="alert-error">{prettyErrorMessage(termsError)}</div> : null}
+            {termsError ? (
+              <div className="alert-error">{prettyErrorMessage(termsError)}</div>
+            ) : null}
           </div>
 
-          <div style={{ display: "grid", gap: 6 }}>
-            <div className="page-subtitle">Subject</div>
+          <div className="filter-field">
+            <div className="page-subtitle filter-label">Subject</div>
             <select
               className="input"
               value={regs.subjectId}
@@ -241,11 +241,13 @@ export function RegistrationsPage() {
                 );
               })}
             </select>
-            {subjectsError ? <div className="alert-error">{prettyErrorMessage(subjectsError)}</div> : null}
+            {subjectsError ? (
+              <div className="alert-error">{prettyErrorMessage(subjectsError)}</div>
+            ) : null}
           </div>
 
-          <div style={{ display: "grid", gap: 6 }}>
-            <div className="page-subtitle">Student index (optional)</div>
+          <div className="filter-field">
+            <div className="page-subtitle filter-label">Student index (optional)</div>
             <input
               className="input"
               placeholder="e.g. 2021/1234"
@@ -257,36 +259,47 @@ export function RegistrationsPage() {
           </div>
         </div>
 
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: 10,
-            flexWrap: "wrap",
-            marginTop: 12,
-          }}
-        >
-          <div className="page-subtitle" style={{ margin: 0 }}>
+        <div className="filters-footer">
+          <div className="page-subtitle filters-status">
             {!canRun
               ? "Pick term + subject, then Search."
               : `Showing ${items.length} of ${regs.total} (page ${regs.page}/${regs.totalPages})`}
           </div>
 
-          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-            <button className="btn btn-primary" type="button" onClick={regs.search} disabled={!canRun || regs.loading}>
+          <div className="filters-actions">
+            <button
+              className="btn btn-primary"
+              type="button"
+              onClick={regs.search}
+              disabled={!canRun || regs.loading}
+            >
               {regs.loading ? "Loading..." : "Search"}
             </button>
 
-            <button className="btn btn-ghost" type="button" onClick={regs.clearSearch} disabled={regs.loading}>
+            <button
+              className="btn btn-ghost"
+              type="button"
+              onClick={regs.clearSearch}
+              disabled={regs.loading}
+            >
               Clear
             </button>
 
-            <button className="btn" type="button" onClick={regs.prev} disabled={!regs.canPrev || regs.loading}>
+            <button
+              className="btn"
+              type="button"
+              onClick={regs.prev}
+              disabled={!regs.canPrev || regs.loading}
+            >
               Prev
             </button>
 
-            <button className="btn" type="button" onClick={regs.next} disabled={!regs.canNext || regs.loading}>
+            <button
+              className="btn"
+              type="button"
+              onClick={regs.next}
+              disabled={!regs.canNext || regs.loading}
+            >
               Next
             </button>
 
@@ -296,7 +309,7 @@ export function RegistrationsPage() {
       </div>
 
       {regs.error ? (
-        <div className="alert-error" style={{ marginBottom: 12 }}>
+        <div className="alert-error exams-error-block">
           {prettyErrorMessage(regs.error)}
         </div>
       ) : null}
@@ -326,14 +339,15 @@ export function RegistrationsPage() {
             <tbody>
               {regs.loading ? (
                 <tr>
-                  <td colSpan={8} style={{ padding: 10 }}>
+                  <td colSpan={5} style={{ padding: 10 }}>
                     Loading...
                   </td>
                 </tr>
               ) : (
                 items.map((r, idx) => {
                   const studentName = pick(r, "studentName", "StudentName") || "-";
-                  const studentIndex = pick(r, "studentIndexNumber", "StudentIndexNumber") || "-";
+                  const studentIndex =
+                    pick(r, "studentIndexNumber", "StudentIndexNumber") || "-";
 
                   const registeredAt = pick(r, "registeredAt", "RegisteredAt") || null;
                   const cancelledAt = pick(r, "cancelledAt", "CancelledAt") || null;

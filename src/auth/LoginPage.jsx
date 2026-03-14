@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { apiFetchText } from "../api/client";
 import { useAuth } from "./AuthContext";
-import "./auth.css";
 
 function prettyErrorMessage(message) {
   if (!message) return "Login failed.";

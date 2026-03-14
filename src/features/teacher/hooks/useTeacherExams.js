@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../../../auth/AuthContext";
 
 import { fetchMyTeacherSubjects } from "../api/subjectsApi";
-import { fetchTermsForGrading } from "../api/termsApi";
+import { fetchTermsForExamsView } from "../api/termsApi";
 import { fetchTeacherExamsForSubjectAndTerm } from "../api/examsApi";
 
 export function useTeacherExamsPage() {
@@ -12,8 +12,8 @@ export function useTeacherExamsPage() {
   const [nonGradableSubjects, setNonGradableSubjects] = useState([]);
 
   const [terms, setTerms] = useState([]);
-  const [subjectId, setSubjectId] = useState(null);
-  const [termId, setTermId] = useState(null);
+  const [subjectId, setSubjectId] = useState("");
+  const [termId, setTermId] = useState("");
 
   const [data, setData] = useState(null);
   const [loadingInit, setLoadingInit] = useState(false);
@@ -29,7 +29,7 @@ export function useTeacherExamsPage() {
     try {
       const [subj, t] = await Promise.all([
         fetchMyTeacherSubjects(token),
-        fetchTermsForGrading(token),
+        fetchTermsForExamsView(token),
       ]);
 
       const g = subj?.gradableSubjects ?? [];
@@ -39,17 +39,16 @@ export function useTeacherExamsPage() {
       setNonGradableSubjects(Array.isArray(ng) ? ng : []);
       setTerms(Array.isArray(t) ? t : []);
 
-      setSubjectId(null);
-      setTermId(null);
-
+      setSubjectId("");
+      setTermId("");
       setData(null);
     } catch (e) {
       setError(e?.message || "Failed to load data.");
       setGradableSubjects([]);
       setNonGradableSubjects([]);
       setTerms([]);
-      setSubjectId(null);
-      setTermId(null);
+      setSubjectId("");
+      setTermId("");
       setData(null);
     } finally {
       setLoadingInit(false);
@@ -78,6 +77,11 @@ export function useTeacherExamsPage() {
     [token]
   );
 
+  const reload = useCallback(async () => {
+    if (!subjectId || !termId) return;
+    await loadExams(Number(subjectId), Number(termId));
+  }, [loadExams, subjectId, termId]);
+
   useEffect(() => {
     loadInit();
   }, [loadInit]);
@@ -98,6 +102,6 @@ export function useTeacherExamsPage() {
     error,
 
     loadExams,
-    reload: () => loadExams(subjectId, termId),
+    reload,
   };
 }

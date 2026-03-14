@@ -1,0 +1,42 @@
+.bulk-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: nowrap;
+}
+
+.bulk-search {
+  flex: 1;
+  min-width: 240px;
+}
+
+.bulk-count {
+  padding: 0 16px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.bulk-toolbar .btn {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 900px) {
+  .bulk-subjects-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bulk-subjects-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .bulk-subjects-actions .btn {
+    width: 100%;
+  }
+}

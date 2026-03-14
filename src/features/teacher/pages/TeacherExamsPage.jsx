@@ -7,6 +7,10 @@ export function TeacherExamsPage() {
     gradableSubjects,
     nonGradableSubjects,
     terms,
+    subjectId,
+    setSubjectId,
+    termId,
+    setTermId,
     data,
     loadingInit,
     loadingExams,
@@ -20,11 +24,9 @@ export function TeacherExamsPage() {
   }, [gradableSubjects, nonGradableSubjects]);
 
   const [tab, setTab] = useState("mine");
-  const [selectedSubjectId, setSelectedSubjectId] = useState("");
-  const [selectedTermId, setSelectedTermId] = useState("");
   const [hasLoaded, setHasLoaded] = useState(false);
 
-  const canLoad = Boolean(selectedSubjectId) && Boolean(selectedTermId);
+  const canLoad = Boolean(subjectId) && Boolean(termId);
 
   const mineCount = hasLoaded ? (data?.mine?.length ?? 0) : 0;
   const othersCount = hasLoaded ? (data?.others?.length ?? 0) : 0;
@@ -39,14 +41,14 @@ export function TeacherExamsPage() {
   async function handleLoad() {
     if (!canLoad) return;
 
-    await loadExams(Number(selectedSubjectId), Number(selectedTermId));
+    await loadExams(Number(subjectId), Number(termId));
     setHasLoaded(true);
+    setTab("mine");
   }
 
   async function handleRefresh() {
-    if (!canLoad || !hasLoaded) return;
-
-    await reload(Number(selectedSubjectId), Number(selectedTermId));
+    if (!hasLoaded) return;
+    await reload();
   }
 
   return (
@@ -62,7 +64,7 @@ export function TeacherExamsPage() {
         <button
           className="btn"
           onClick={handleRefresh}
-          disabled={loadingInit || loadingExams || !hasLoaded || !canLoad}
+          disabled={loadingInit || loadingExams || !hasLoaded}
           type="button"
         >
           Refresh
@@ -80,8 +82,8 @@ export function TeacherExamsPage() {
             <span>Subject</span>
             <select
               className="input"
-              value={selectedSubjectId}
-              onChange={(e) => setSelectedSubjectId(e.target.value)}
+              value={subjectId}
+              onChange={(e) => setSubjectId(e.target.value)}
               disabled={loadingInit}
             >
               <option value="">Select subject</option>
@@ -92,7 +94,7 @@ export function TeacherExamsPage() {
                   : s?.name ?? `#${id}`;
 
                 return (
-                  <option key={id} value={id}>
+                  <option key={id} value={String(id)}>
                     {label}
                   </option>
                 );
@@ -104,8 +106,8 @@ export function TeacherExamsPage() {
             <span>Term</span>
             <select
               className="input"
-              value={selectedTermId}
-              onChange={(e) => setSelectedTermId(e.target.value)}
+              value={termId}
+              onChange={(e) => setTermId(e.target.value)}
               disabled={loadingInit}
             >
               <option value="">Select term</option>
@@ -114,7 +116,7 @@ export function TeacherExamsPage() {
                 const label = t?.name ?? t?.termName ?? `Term ${id}`;
 
                 return (
-                  <option key={id} value={id}>
+                  <option key={id} value={String(id)}>
                     {label}
                   </option>
                 );

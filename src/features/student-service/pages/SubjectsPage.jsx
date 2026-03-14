@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSsSubjects } from "../hooks/useSSSubjects";
 import { EditSubjectTeachersModal } from "../components/EditSubjectTeachersModal";
 import { useAuth } from "../../../auth/AuthContext";
@@ -65,12 +65,42 @@ export function StudentServiceSubjectsPage() {
   const [newName, setNewName] = useState("");
   const [newEcts, setNewEcts] = useState("");
 
-  // modal state
   const [editOpen, setEditOpen] = useState(false);
   const [editSubject, setEditSubject] = useState(null);
   const [savingTeachers, setSavingTeachers] = useState(false);
 
+  const [successMessage, setSuccessMessage] = useState("");
+  const [formError, setFormError] = useState("");
+
+  useEffect(() => {
+    if (!successMessage) return;
+
+    const timer = setTimeout(() => {
+      setSuccessMessage("");
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [successMessage]);
+
+  const ectsTrimmed = newEcts.trim();
+  const ectsNum = Number(ectsTrimmed);
+
+  const canCreateSubject = useMemo(() => {
+    return (
+      newCode.trim() &&
+      newName.trim() &&
+      ectsTrimmed &&
+      Number.isFinite(ectsNum) &&
+      ectsNum > 0 &&
+      ectsNum <= 15 &&
+      !actionLoading
+    );
+  }, [newCode, newName, ectsTrimmed, ectsNum, actionLoading]);
+
   async function onSearchExact() {
+    setSuccessMessage("");
+    setFormError("");
+
     const res = await searchByCode(codeQuery);
     setSearchResult(res);
   }
@@ -78,38 +108,64 @@ export function StudentServiceSubjectsPage() {
   function clearSearch() {
     setSearchResult(null);
     setCodeQuery("");
+    setFormError("");
+    setSuccessMessage("");
   }
 
   async function onCreate(e) {
     e.preventDefault();
 
+    setFormError("");
+    setSuccessMessage("");
+
     const code = newCode.trim();
     const name = newName.trim();
-    const ectsNum = Number(newEcts);
+    const ectsRaw = newEcts.trim();
+    const ects = Number(ectsRaw);
 
-    if (!code || !name) return;
-    if (!Number.isFinite(ectsNum) || ectsNum <= 0) return;
+    try {
+      await create({ code, name, ects });
 
-    await create({ code, name, ects: ectsNum });
+      setTab("active");
+      setSearchResult(null);
+      setCodeQuery("");
 
-    setNewCode("");
-    setNewName("");
-    setNewEcts("");
+      await reload();
+
+      setNewCode("");
+      setNewName("");
+      setNewEcts("");
+      setFormError("");
+
+      setSuccessMessage(`Subject "${code}" was created successfully.`);
+    } catch (e) {
+      setFormError(prettyErrorMessage(e?.message));
+    }
   }
 
   async function onDeactivate(subject) {
+    setSuccessMessage("");
+    setFormError("");
+
     const ok = window.confirm(`Deactivate subject ${subject.code}?`);
     if (!ok) return;
+
     await deactivate(subject.id);
   }
 
   async function onDelete(subject) {
+    setSuccessMessage("");
+    setFormError("");
+
     const ok = window.confirm(`Delete subject ${subject.code}? This cannot be undone.`);
     if (!ok) return;
+
     await remove(subject.id);
   }
 
   function openEditTeachers(subject) {
+    setSuccessMessage("");
+    setFormError("");
     setEditSubject(subject);
     setEditOpen(true);
   }
@@ -160,6 +216,9 @@ export function StudentServiceSubjectsPage() {
     }
 
     setSavingTeachers(true);
+    setSuccessMessage("");
+    setFormError("");
+
     try {
       for (const t of toAdd) {
         await createTeachingAssignment(
@@ -181,6 +240,7 @@ export function StudentServiceSubjectsPage() {
 
       await reload();
       closeEditTeachers();
+      setSuccessMessage("Teaching assignments updated successfully.");
     } catch (e) {
       const msg = prettyErrorMessage(e?.message);
       alert(msg);
@@ -201,118 +261,166 @@ export function StudentServiceSubjectsPage() {
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <button className="btn" onClick={reload} disabled={loading || actionLoading}>
+        <div className="page-header-actions">
+          <button
+            className="btn"
+            onClick={() => {
+              setSuccessMessage("");
+              setFormError("");
+              reload();
+            }}
+            disabled={loading || actionLoading}
+          >
             Refresh
           </button>
         </div>
       </div>
 
-      {error ? <div className="alert-error">{error}</div> : null}
+      {error ? <div className="alert-error subjects-page-error">{error}</div> : null}
 
-      {/* Create */}
-      <div className="card" style={{ padding: 12, marginBottom: 12 }}>
-        <div style={{ fontWeight: 800, marginBottom: 8 }}>Create subject</div>
-        <form
-          onSubmit={onCreate}
-          style={{
-            display: "grid",
-            gap: 10,
-            gridTemplateColumns: "160px 1fr 120px 160px",
-          }}
-        >
+      {successMessage ? (
+        <div className="alert-success subjects-page-success">{successMessage}</div>
+      ) : null}
+
+      {formError ? (
+        <div className="alert-error subjects-form-error">{formError}</div>
+      ) : null}
+
+      <div className="card subjects-create-card">
+        <div className="subjects-section-title">Create subject</div>
+
+        <form onSubmit={onCreate} className="subjects-create-form">
           <input
             className="input"
             placeholder="Code (e.g. MAT1)"
             value={newCode}
-            onChange={(e) => setNewCode(e.target.value)}
+            onChange={(e) => {
+              setNewCode(e.target.value);
+              setFormError("");
+            }}
           />
+
           <input
             className="input"
             placeholder="Name"
             value={newName}
-            onChange={(e) => setNewName(e.target.value)}
+            onChange={(e) => {
+              setNewName(e.target.value);
+              setFormError("");
+            }}
           />
+
           <input
             className="input"
             placeholder="ECTS"
             value={newEcts}
-            onChange={(e) => setNewEcts(e.target.value)}
+            onChange={(e) => {
+              setNewEcts(e.target.value);
+              setFormError("");
+            }}
             inputMode="numeric"
           />
-          <button className="btn btn-primary" disabled={actionLoading}>
-            Create
+
+          <button className="btn btn-primary" disabled={!canCreateSubject}>
+            {actionLoading ? "Creating..." : "Create"}
           </button>
         </form>
       </div>
 
-      {/* Tabs + server query + exact code */}
-      <div className="card" style={{ padding: 12, marginBottom: 12 }}>
-        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-          <button
-            className={`btn ${tab === "active" ? "btn-primary" : ""}`}
-            onClick={() => {
-              setTab("active");
-              setSearchResult(null);
-            }}
-            type="button"
-          >
-            Active
-          </button>
+      <div className="card subjects-filters-card">
+        <div className="subjects-top-row">
+          <div className="subjects-tabs">
+            <button
+              className={`btn ${tab === "active" ? "btn-primary" : ""}`}
+              onClick={() => {
+                setTab("active");
+                setSearchResult(null);
+                setSuccessMessage("");
+                setFormError("");
+              }}
+              type="button"
+            >
+              Active
+            </button>
 
-          <button
-            className={`btn ${tab === "inactive" ? "btn-primary" : ""}`}
-            onClick={() => {
-              setTab("inactive");
-              setSearchResult(null);
-            }}
-            type="button"
-          >
-            Inactive
-          </button>
+            <button
+              className={`btn ${tab === "inactive" ? "btn-primary" : ""}`}
+              onClick={() => {
+                setTab("inactive");
+                setSearchResult(null);
+                setSuccessMessage("");
+                setFormError("");
+              }}
+              type="button"
+            >
+              Inactive
+            </button>
+          </div>
 
-          <div style={{ flex: 1 }} />
+          <div className="subjects-search-group">
+            <input
+              className="input subjects-search-input"
+              placeholder="Search (code or name)..."
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setSuccessMessage("");
+                setFormError("");
+              }}
+            />
 
-          <input
-            className="input"
-            style={{ width: 240 }}
-            placeholder="Search (code or name)..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
+            <input
+              className="input subjects-exact-input"
+              placeholder="Find exact code..."
+              value={codeQuery}
+              onChange={(e) => {
+                setCodeQuery(e.target.value);
+                setSuccessMessage("");
+                setFormError("");
+              }}
+            />
 
-          <input
-            className="input"
-            style={{ width: 220 }}
-            placeholder="Find exact code..."
-            value={codeQuery}
-            onChange={(e) => setCodeQuery(e.target.value)}
-          />
+            <button
+              className="btn"
+              type="button"
+              onClick={onSearchExact}
+              disabled={!codeQuery.trim() || loading}
+            >
+              Find exact
+            </button>
 
-          <button className="btn" type="button" onClick={onSearchExact} disabled={!codeQuery.trim() || loading}>
-            Find exact
-          </button>
-
-          <button className="btn btn-ghost" type="button" onClick={clearSearch} disabled={!codeQuery && !searchResult}>
-            Clear exact
-          </button>
+            <button
+              className="btn btn-ghost"
+              type="button"
+              onClick={clearSearch}
+              disabled={!codeQuery && !searchResult}
+            >
+              Clear exact
+            </button>
+          </div>
         </div>
 
-        <div className="page-subtitle" style={{ marginTop: 8, display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <span>
-            Total in tab: <span className="mono">{total}</span>
-          </span>
-          <span>
-            Page <span className="mono">{page}</span>/<span className="mono">{pageCount}</span>
-          </span>
+        <div className="subjects-bottom-row">
+          <div className="subjects-meta">
+            <span>
+              Total in tab: <span className="mono">{total}</span>
+            </span>
+            <span>
+              Page <span className="mono">{page}</span>/<span className="mono">{pageCount}</span>
+            </span>
+          </div>
 
-          <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center" }}>
-            <span style={{ whiteSpace: "nowrap" }}>Page size:</span>
+          <div className="subjects-pager-controls">
+            <span className="subjects-page-size-label">Page size:</span>
+
             <select
-              className="input"
-              style={{ width: 92, padding: "6px 8px" }}
+              className="input subjects-page-size-select"
               value={take}
-              onChange={(e) => setTake(Number(e.target.value))}
+              onChange={(e) => {
+                setTake(Number(e.target.value));
+                setSuccessMessage("");
+                setFormError("");
+              }}
               disabled={loading}
             >
               <option value={10}>10</option>
@@ -323,6 +431,7 @@ export function StudentServiceSubjectsPage() {
             <button className="btn" onClick={goPrev} disabled={!canPrev || loading}>
               Prev
             </button>
+
             <button className="btn" onClick={goNext} disabled={!canNext || loading}>
               Next
             </button>
@@ -330,53 +439,82 @@ export function StudentServiceSubjectsPage() {
         </div>
       </div>
 
-      {/* List */}
       <div className="table-wrap">
-        <table className="table">
+        <table className="table subjects-table">
+          <colgroup>
+            <col style={{ width: "6%" }} />
+            <col style={{ width: "9%" }} />
+            <col style={{ width: "24%" }} />
+            <col style={{ width: "7%" }} />
+            <col style={{ width: "34%" }} />
+            <col style={{ width: "32%" }} />
+          </colgroup>
+
           <thead>
             <tr>
-              <th style={{ width: 70}}>No.</th>
-              <th style={{ width: 90 }}>Code</th>
+              <th>No.</th>
+              <th>Code</th>
               <th>Name</th>
-              <th style={{ width: 80 }}>ECTS</th>
+              <th>ECTS</th>
               <th>Teachers</th>
-              <th style={{ width: 320 }}>Actions</th>
+              <th>Actions</th>
             </tr>
           </thead>
+
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={5} style={{ padding: 10 }}>
+                <td colSpan={6} style={{ padding: 10 }}>
                   Loading...
                 </td>
               </tr>
             ) : listToRender.length === 0 ? (
               <tr>
-                <td colSpan={5} style={{ padding: 10 }}>
+                <td colSpan={6} style={{ padding: 10 }}>
                   No subjects found.
                 </td>
               </tr>
             ) : (
-              listToRender.map((s,i) => (
+              listToRender.map((s, i) => (
                 <tr key={s.id}>
                   <td className="mono" style={{ textAlign: "center" }}>
-                  {skip + i + 1}
+                    {skip + i + 1}
                   </td>
+
                   <td className="mono">{s.code}</td>
-                  <td>{s.name}</td>
+
+                  <td className="subjects-name-cell" title={s.name}>
+                    {s.name}
+                  </td>
+
                   <td>{s.ects}</td>
-                  <td>
+
+                  <td
+                    className="subjects-teachers-cell"
+                    title={(s.teachers || []).map(teacherNameOnly).join(", ")}
+                  >
                     {(s.teachers || []).length === 0
                       ? "-"
                       : (s.teachers || []).map(teacherNameOnly).join(", ")}
                   </td>
+
                   <td>
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      <button className="btn" type="button" onClick={() => openEditTeachers(s)} disabled={actionLoading}>
+                    <div className="subjects-actions">
+                      <button
+                        className="btn"
+                        type="button"
+                        onClick={() => openEditTeachers(s)}
+                        disabled={actionLoading}
+                      >
                         Edit teachers
                       </button>
 
-                      <button className="btn" type="button" onClick={() => onDelete(s)} disabled={actionLoading}>
+                      <button
+                        className="btn"
+                        type="button"
+                        onClick={() => onDelete(s)}
+                        disabled={actionLoading}
+                      >
                         Delete
                       </button>
 
