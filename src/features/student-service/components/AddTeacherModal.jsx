@@ -1,13 +1,10 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../../auth/AuthContext";
 import { createTeacher } from "../api/teachersSSApi";
+import { TEACHER_TITLE_OPTIONS } from "../../../utils/teacherTitle";
 
-const TITLE_OPTIONS = [
-  { value: 1, label: "Assistant professor" },
-  { value: 2, label: "Associate professor" },
-  { value: 3, label: "Full professor" },
-  { value: 4, label: "Professor emeritus" },
-];
+const EMPLOYEE_NUMBER_REGEX = /^\d{4}\/\d{4}$/;
+const JMBG_REGEX = /^\d{13}$/;
 
 export function AddTeacherModal({ open, onClose, onCreated }) {
   const { token } = useAuth();
@@ -43,26 +40,61 @@ export function AddTeacherModal({ open, onClose, onCreated }) {
     onClose?.();
   }
 
+  function validateForm() {
+    const jmbg = form.jmbg.trim();
+    const firstName = form.firstName.trim();
+    const lastName = form.lastName.trim();
+    const employeeNumber = form.employeeNumber.trim();
+    const titleVal = Number(form.title);
+
+    if (!JMBG_REGEX.test(jmbg)) {
+      return "JMBG must contain exactly 13 digits.";
+    }
+
+    if (!firstName) {
+      return "First name is required.";
+    }
+
+    if (!lastName) {
+      return "Last name is required.";
+    }
+
+    if (!EMPLOYEE_NUMBER_REGEX.test(employeeNumber)) {
+      return "Employee number must be in format YYYY/NNNN.";
+    }
+
+    if (!Number.isInteger(titleVal) || !TEACHER_TITLE_OPTIONS.some((x) => x.value === titleVal)) {
+      return "Title is required.";
+    }
+
+    return "";
+  }
+
   async function onSubmit(e) {
     e.preventDefault();
-    if (!token) return;
+    if (!token) {
+      setFormError("You are not authenticated.");
+      return;
+    }
 
-    setSaving(true);
     setFormError("");
 
-    try {
-      const titleVal = Number(form.title);
-      if (!Number.isFinite(titleVal)) {
-        throw new Error("Title is required.");
-      }
+    const validationError = validateForm();
+    if (validationError) {
+      setFormError(validationError);
+      return;
+    }
 
+    setSaving(true);
+
+    try {
       await createTeacher(
         {
-          jmbg: form.jmbg,
-          firstName: form.firstName,
-          lastName: form.lastName,
-          employeeNumber: form.employeeNumber,
-          title: titleVal,
+          jmbg: form.jmbg.trim(),
+          firstName: form.firstName.trim(),
+          lastName: form.lastName.trim(),
+          employeeNumber: form.employeeNumber.trim(),
+          title: Number(form.title),
         },
         token
       );
@@ -94,10 +126,17 @@ export function AddTeacherModal({ open, onClose, onCreated }) {
       }}
     >
       <div className="card" style={{ width: "min(720px, 100%)", padding: 14 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            marginBottom: 10,
+          }}
+        >
           <div style={{ fontWeight: 900 }}>Add teacher</div>
           <div style={{ flex: 1 }} />
-          <button className="btn" onClick={close} disabled={saving}>
+          <button type="button" className="btn" onClick={close} disabled={saving}>
             Close
           </button>
         </div>
@@ -107,9 +146,16 @@ export function AddTeacherModal({ open, onClose, onCreated }) {
             className="input"
             placeholder="JMBG"
             value={form.jmbg}
-            onChange={(e) => setForm((p) => ({ ...p, jmbg: e.target.value }))}
+            onChange={(e) =>
+              setForm((p) => ({
+                ...p,
+                jmbg: e.target.value.replace(/\D/g, "").slice(0, 13),
+              }))
+            }
             required
             disabled={saving}
+            inputMode="numeric"
+            maxLength={13}
           />
 
           <input
@@ -149,7 +195,8 @@ export function AddTeacherModal({ open, onClose, onCreated }) {
             <option value="" disabled>
               Select title...
             </option>
-            {TITLE_OPTIONS.map((o) => (
+
+            {TEACHER_TITLE_OPTIONS.map((o) => (
               <option key={o.value} value={String(o.value)}>
                 {o.label}
               </option>

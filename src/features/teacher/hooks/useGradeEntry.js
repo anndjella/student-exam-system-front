@@ -7,8 +7,73 @@ import { createExam, updateExam, lockExams } from "../api/examsApi";
 
 function toInputDate(v) {
   if (!v) return "";
-  if (typeof v === "string") return v;
-  return String(v);
+  return String(v).slice(0, 10);
+}
+
+function normalizeText(v) {
+  return String(v ?? "").trim();
+}
+
+function normalizeGradeValue(v) {
+  if (v === "" || v == null) return "";
+  return String(v).trim();
+}
+
+function hasAnyRowValue(r) {
+  return Boolean(
+    normalizeText(r?.date) ||
+      normalizeGradeValue(r?.grade) !== "" ||
+      normalizeText(r?.note)
+  );
+}
+
+function isValidGradeValue(grade) {
+  if (grade === "" || grade == null) return false;
+
+  const n = Number(grade);
+  return Number.isInteger(n) && n >= 6 && n <= 10;
+}
+
+function gradeChanged(r) {
+  return normalizeGradeValue(r.grade) !== normalizeGradeValue(r.originalGrade);
+}
+
+function noteChanged(r) {
+  return normalizeText(r.note) !== normalizeText(r.originalNote);
+}
+
+function validateRow(r) {
+  if (!hasAnyRowValue(r)) return "";
+
+  if (!normalizeText(r.date)) {
+    return `Student ${r.studentName || r.studentId}: exam date is required.`;
+  }
+
+  if (!isValidGradeValue(r.grade)) {
+    return `Student ${r.studentName || r.studentId}: grade must be an integer from 6 to 10.`;
+  }
+
+  if (r.hasExam && gradeChanged(r)) {
+    const note = normalizeText(r.note);
+
+    if (!note) {
+      return `Student ${r.studentName || r.studentId}: if you change the grade, you must enter a new note.`;
+    }
+
+    if (!noteChanged(r)) {
+      return `Student ${r.studentName || r.studentId}: if you change the grade, the note must also be updated.`;
+    }
+  }
+
+  return "";
+}
+
+function buildPayload(row) {
+  return {
+    Date: normalizeText(row.date) || null,
+    Grade: row.grade === "" ? null : Number(row.grade),
+    Note: normalizeText(row.note) || null,
+  };
 }
 
 export function useGradeEntry(subjectId) {
@@ -36,21 +101,21 @@ export function useGradeEntry(subjectId) {
 
     try {
       const data = await fetchTermsForGrading(subjectId, token);
+      const list = Array.isArray(data) ? data : [];
 
-      const list = data || [];
       setTerms(list);
 
       setTermId((current) => {
         if (!list.length) return null;
 
         const exists = list.some(
-          (t) => Number(t?.termID ?? t?.id) === Number(current)
+          (t) => Number(t?.termID ?? t?.TermID ?? t?.id ?? t?.ID) === Number(current)
         );
 
         if (exists) return current;
 
         const first = list[0];
-        return first?.termID ?? first?.id ?? null;
+        return first?.termID ?? first?.TermID ?? first?.id ?? first?.ID ?? null;
       });
     } catch (e) {
       setError(e?.userMessage || e?.message || "Failed to load terms.");
@@ -74,9 +139,14 @@ export function useGradeEntry(subjectId) {
       try {
         const data = await fetchRegistrationsForSubjectAndTerm(sid, tid, token);
 
-        const mapped = (data || []).map((r) => {
+        const mapped = (Array.isArray(data) ? data : []).map((r) => {
           const studentId = r.studentID ?? r.StudentID;
           const signedAt = r.signedAt ?? r.SignedAt ?? null;
+
+          const date = toInputDate(r.examDate ?? r.ExamDate ?? r.date ?? r.Date);
+          const grade =
+            (r.grade ?? r.Grade) == null ? "" : String(r.grade ?? r.Grade);
+          const note = r.note ?? r.Note ?? "";
 
           return {
             studentId,
@@ -84,15 +154,18 @@ export function useGradeEntry(subjectId) {
             studentIndex: r.studentIndexNumber ?? r.StudentIndexNumber ?? "",
 
             hasExam: Boolean(r.hasExam ?? r.HasExam),
-            examId: r.examID ?? r.ExamID ?? null,
+            examId: r.examID ?? r.ExamID ?? r.id ?? r.ID ?? null,
 
             signedAt,
             locked: Boolean(signedAt),
 
-            date: toInputDate(r.examDate ?? r.ExamDate),
-            grade:
-              (r.grade ?? r.Grade) == null ? "" : String(r.grade ?? r.Grade),
-            note: r.note ?? r.Note ?? "",
+            date,
+            grade,
+            note,
+
+            originalDate: date,
+            originalGrade: grade,
+            originalNote: note,
           };
         });
 
@@ -128,7 +201,9 @@ export function useGradeEntry(subjectId) {
   }, [rows]);
 
   function setAllDates(dateValue) {
-    setRows((cur) => cur.map((r) => (r.locked ? r : { ...r, date: dateValue })));
+    setRows((cur) =>
+      cur.map((r) => (r.locked ? r : { ...r, date: dateValue }))
+    );
   }
 
   function updateRow(studentId, patch) {
@@ -144,36 +219,27 @@ export function useGradeEntry(subjectId) {
     if (!row || row.locked) return;
 
     setError("");
+
+    const rowError = validateRow(row);
+    if (rowError) {
+      setError(rowError);
+      return;
+    }
+
     setSaving(true);
 
     try {
-      const payload = {
-        Date: row.date || null,
-        Grade: row.grade === "" ? null : Number(row.grade),
-        Note: row.note || null,
-      };
+      const payload = buildPayload(row);
 
-      const res = row.hasExam
-        ? await updateExam(subjectId, termId, studentId, payload, token)
-        : await createExam(subjectId, termId, studentId, payload, token);
+      if (row.hasExam) {
+        if (!row.examId) {
+          throw new Error("Exam ID is missing for update.");
+        }
 
-      const signedAt = res?.signedAt ?? res?.SignedAt ?? row.signedAt ?? null;
-
-      updateRow(studentId, {
-        hasExam: true,
-        examId: res?.examID ?? res?.ExamID ?? res?.id ?? res?.ID ?? row.examId,
-        date:
-          toInputDate(
-            res?.examDate ?? res?.ExamDate ?? res?.date ?? res?.Date
-          ) || row.date,
-        grade:
-          (res?.grade ?? res?.Grade) == null
-            ? row.grade
-            : String(res?.grade ?? res?.Grade),
-        note: res?.note ?? res?.Note ?? row.note,
-        signedAt,
-        locked: Boolean(signedAt),
-      });
+        await updateExam(row.examId, payload, token);
+      } else {
+        await createExam(subjectId, termId, studentId, payload, token);
+      }
 
       await loadRegistrations(subjectId, termId);
     } catch (e) {
@@ -187,29 +253,38 @@ export function useGradeEntry(subjectId) {
     if (!token || !subjectId || !termId) return;
 
     setError("");
+
+    const candidateRows = rows.filter((r) => !r.locked && hasAnyRowValue(r));
+
+    if (!candidateRows.length) {
+      setError("There are no entered exams to save.");
+      return;
+    }
+
+    for (const row of candidateRows) {
+      const rowError = validateRow(row);
+      if (rowError) {
+        setError(rowError);
+        return;
+      }
+    }
+
     setSaving(true);
 
     try {
-      for (const r of rows) {
-        if (r.locked) continue;
+      for (const row of candidateRows) {
+        const payload = buildPayload(row);
 
-        const hasAny =
-          (r.date && String(r.date).trim()) ||
-          r.grade !== "" ||
-          (r.note && r.note.trim());
+        if (row.hasExam) {
+          if (!row.examId) {
+            throw new Error(
+              `Exam ID is missing for student ${row.studentName || row.studentId}.`
+            );
+          }
 
-        if (!hasAny) continue;
-
-        const payload = {
-          Date: r.date || null,
-          Grade: r.grade === "" ? null : Number(r.grade),
-          Note: r.note || null,
-        };
-
-        if (r.hasExam) {
-          await updateExam(subjectId, termId, r.studentId, payload, token);
+          await updateExam(row.examId, payload, token);
         } else {
-          await createExam(subjectId, termId, r.studentId, payload, token);
+          await createExam(subjectId, termId, row.studentId, payload, token);
         }
       }
 

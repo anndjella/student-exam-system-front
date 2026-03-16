@@ -8,9 +8,9 @@ export async function createExam(subjectId, termId, studentId, payload, token) {
   );
 }
 
-export async function updateExam(subjectId, termId, studentId, payload, token) {
+export async function updateExam(examId, payload, token) {
   return await apiFetchJson(
-    `/api/me/teacher/exams/subject/${subjectId}/term/${termId}/student/${studentId}`,
+    `/api/me/teacher/exams/${examId}`,
     { method: "PATCH", body: JSON.stringify(payload) },
     token
   );

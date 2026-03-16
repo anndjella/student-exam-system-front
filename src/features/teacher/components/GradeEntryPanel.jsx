@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useGradeEntry } from "../hooks/useGradeEntry";
 import { GradeDrawer } from "./GradeDrawer";
 
@@ -44,20 +44,14 @@ function canEnterGradesOf(term) {
   return today >= start && today <= end;
 }
 
-function hasDateValue(dateStr) {
-  return typeof dateStr === "string" && dateStr.trim().length > 0;
-}
-
 export function GradeEntryPanel({ subject }) {
   const {
     terms,
     termId,
     setTermId,
     rows,
-    setAllDates,
     updateRow,
     saveOne,
-    saveAll,
     lock,
     loadingTerms,
     loadingRegs,
@@ -109,6 +103,12 @@ export function GradeEntryPanel({ subject }) {
 
   const pageSafe = Math.min(page, totalPages);
 
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
+
   const pagedRows = useMemo(() => {
     const start = (pageSafe - 1) * pageSize;
     return filtered.slice(start, start + pageSize);
@@ -119,24 +119,19 @@ export function GradeEntryPanel({ subject }) {
     return rows.find((r) => r.studentId === selectedId) || null;
   }, [rows, selectedId]);
 
+  useEffect(() => {
+    if (selectedId && !rows.some((r) => r.studentId === selectedId)) {
+      setSelectedId(null);
+    }
+  }, [rows, selectedId]);
+
   function isRowDisabled(r) {
     return lockedAll || gradeEntryBlocked || r.locked;
-  }
-
-  async function onSaveAll() {
-    if (lockedAll || gradeEntryBlocked) return;
-
-    const invalid = rows.some((r) => !r.locked && !hasDateValue(r.date));
-    if (invalid) return;
-
-    await saveAll();
   }
 
   async function onSaveSelected(r) {
     if (!r) return;
     if (lockedAll || gradeEntryBlocked || r.locked) return;
-    if (!hasDateValue(r.date)) return;
-
     await saveOne(r.studentId);
   }
 
@@ -155,7 +150,7 @@ export function GradeEntryPanel({ subject }) {
       </div>
 
       <div className="page-subtitle" style={{ marginBottom: 10 }}>
-        Choose a term, then select a student to enter grade/date/note in the side panel. Use Save all when done.
+        Choose a term, then select a student to enter grade/date/note in the side panel.
       </div>
 
       {gradeEntryBlocked ? (
@@ -213,39 +208,9 @@ export function GradeEntryPanel({ subject }) {
         >
           {lockedAll ? "Locked" : locking ? "Locking..." : "Lock"}
         </button>
-
-        <button
-          className="btn btn-primary"
-          type="button"
-          onClick={onSaveAll}
-          disabled={saving || lockedAll || gradeEntryBlocked || loadingRegs}
-        >
-          {saving ? "Saving..." : "Save all"}
-        </button>
       </div>
 
-      <div className="toolbar" style={{ marginTop: 10 }}>
-        <div style={{ flex: 1 }} />
-
-        <div className="pager">
-          <button className="btn" type="button" onClick={() => setPage(1)} disabled={pageSafe === 1}>
-            {"<<"}
-          </button>
-          <button className="btn" type="button" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={pageSafe === 1}>
-            {"<"}
-          </button>
-          <div className="page-subtitle" style={{ margin: "0 8px" }}>
-            Page <b>{pageSafe}</b> / <b>{totalPages}</b>
-          </div>
-          <button className="btn" type="button" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={pageSafe === totalPages}>
-            {">"}
-          </button>
-          <button className="btn" type="button" onClick={() => setPage(totalPages)} disabled={pageSafe === totalPages}>
-            {">>"}
-          </button>
-        </div>
-      </div>
-
+      {/* tabela */}
       <div className="table-wrap" style={{ marginTop: 12 }}>
         <table className="table table-compact">
           <thead>
@@ -286,12 +251,11 @@ export function GradeEntryPanel({ subject }) {
                     ].join(" ")}
                     onClick={() => onRowClick(r)}
                     style={{ cursor: "pointer" }}
-                    title="Click to edit"
                   >
                     <td style={{ fontWeight: 800 }}>{r.studentName}</td>
                     <td className="mono">{r.studentIndex || "-"}</td>
-                    <td className="mono">{r.date ? r.date : "-"}</td>
-                    <td className="mono">{r.grade ?? "-"}</td>
+                    <td className="mono">{r.date || "-"}</td>
+                    <td className="mono">{r.grade !== "" ? r.grade : "-"}</td>
                     <td>
                       <span className="badge">{status}</span>
                     </td>

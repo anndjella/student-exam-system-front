@@ -1,8 +1,16 @@
 import { useEffect, useState } from "react";
 import { useStudentsApi } from "../../shared/hooks/useStudentsApi";
 
+const INDEX_NUMBER_REGEX = /^\d{4}\/\d{4}$/;
+const JMBG_REGEX = /^\d{13}$/;
+
 export function AddStudentModal({ open, onClose, onCreated }) {
-  const { create, actionLoading, error: actionError, clearError } = useStudentsApi();
+  const {
+    create,
+    actionLoading,
+    error: actionError,
+    clearError,
+  } = useStudentsApi();
 
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
@@ -34,19 +42,51 @@ export function AddStudentModal({ open, onClose, onCreated }) {
     onClose?.();
   }
 
+  function validateForm() {
+    const jmbg = form.jmbg.trim();
+    const firstName = form.firstName.trim();
+    const lastName = form.lastName.trim();
+    const indexNumber = form.indexNumber.trim();
+
+    if (!JMBG_REGEX.test(jmbg)) {
+      return "JMBG must contain exactly 13 digits.";
+    }
+
+    if (!firstName) {
+      return "First name is required.";
+    }
+
+    if (!lastName) {
+      return "Last name is required.";
+    }
+
+    if (!INDEX_NUMBER_REGEX.test(indexNumber)) {
+      return "Index number must be in format YYYY/NNNN.";
+    }
+
+    return "";
+  }
+
   async function onSubmit(e) {
     e.preventDefault();
 
-    setSaving(true);
     setFormError("");
     clearError();
 
+    const validationError = validateForm();
+    if (validationError) {
+      setFormError(validationError);
+      return;
+    }
+
+    setSaving(true);
+
     try {
       await create({
-        jmbg: form.jmbg,
-        firstName: form.firstName,
-        lastName: form.lastName,
-        indexNumber: form.indexNumber,
+        jmbg: form.jmbg.trim(),
+        firstName: form.firstName.trim(),
+        lastName: form.lastName.trim(),
+        indexNumber: form.indexNumber.trim(),
       });
 
       await onCreated?.();
@@ -76,10 +116,22 @@ export function AddStudentModal({ open, onClose, onCreated }) {
       }}
     >
       <div className="card" style={{ width: "min(720px, 100%)", padding: 14 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            marginBottom: 10,
+          }}
+        >
           <div style={{ fontWeight: 900 }}>Add student</div>
           <div style={{ flex: 1 }} />
-          <button className="btn" onClick={close} disabled={saving || actionLoading}>
+          <button
+            type="button"
+            className="btn"
+            onClick={close}
+            disabled={saving || actionLoading}
+          >
             Close
           </button>
         </div>
@@ -89,9 +141,16 @@ export function AddStudentModal({ open, onClose, onCreated }) {
             className="input"
             placeholder="JMBG"
             value={form.jmbg}
-            onChange={(e) => setForm((p) => ({ ...p, jmbg: e.target.value }))}
+            onChange={(e) =>
+              setForm((p) => ({
+                ...p,
+                jmbg: e.target.value.replace(/\D/g, "").slice(0, 13),
+              }))
+            }
             required
             disabled={saving || actionLoading}
+            inputMode="numeric"
+            maxLength={13}
           />
 
           <input

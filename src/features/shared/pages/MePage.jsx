@@ -1,20 +1,6 @@
 import { useMe } from "../hooks/useMe";
 import { formatDate } from "../../../utils/datetime";
-
-function titleToText(title) {
-  switch (title) {
-    case 1:
-      return "Assistant Professor";
-    case 2:
-      return "Associate Professor";
-    case 3:
-      return "Full Professor";
-    case 4:
-      return "Professor Emeritus";
-    default:
-      return "-";
-  }
-}
+import { TEACHER_TITLE_OPTIONS } from "../../../utils/teacherTitle";
 
 export function MePage() {
   const { me, loading, error, reload } = useMe();
@@ -76,7 +62,7 @@ export function MePage() {
                     </tr>
                     <tr>
                       <th>Title</th>
-                      <td>{titleToText(me.title)}</td>
+                      <td>{TEACHER_TITLE_OPTIONS.find((o) => o.value === me.title)?.label || "-"}</td>
                     </tr>
                   </>
                 )}

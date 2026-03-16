@@ -4,13 +4,7 @@ import { usePagedQuery } from "../../shared/hooks/usePagedQuery";
 import { listTeachers, updateTeacher, deleteTeacher } from "../api/teachersSSApi";
 import { AddTeacherModal } from "../components/AddTeacherModal";
 import { formatDate, formatDateTime } from "../../../utils/datetime";
-
-const TITLE_OPTIONS = [
-  { value: 1, label: "Assistant professor" },
-  { value: 2, label: "Associate professor" },
-  { value: 3, label: "Full professor" },
-  { value: 4, label: "Professor emeritus" },
-];
+import { TEACHER_TITLE_OPTIONS } from "../../../utils/teacherTitle";
 
 /* helpers */
 function idOf(x) {
@@ -40,7 +34,7 @@ function titleNumberOf(x) {
 }
 function titleLabelOf(x) {
   const n = titleNumberOf(x);
-  return TITLE_OPTIONS.find((o) => o.value === n)?.label ?? "-";
+  return TEACHER_TITLE_OPTIONS.find((o) => o.value === n)?.label || "-";
 }
 function dobOf(x) {
   return x?.dateOfBirth ?? x?.DateOfBirth ?? null;
@@ -507,7 +501,7 @@ export function TeachersPage({
                   <option value="" disabled>
                     Select title...
                   </option>
-                  {TITLE_OPTIONS.map((o) => (
+                  {TEACHER_TITLE_OPTIONS.map((o) => (
                     <option key={o.value} value={String(o.value)}>
                       {o.label}
                     </option>
