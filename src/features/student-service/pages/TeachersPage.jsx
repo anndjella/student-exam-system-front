@@ -23,6 +23,9 @@ function fullNameOf(x) {
 function employeeNumOf(x) {
   return x?.employeeNumber ?? x?.EmployeeNumber ?? "";
 }
+function emailOf(x) {
+  return x?.email ?? x?.Email ?? "";
+}
 function rawTitleOf(x) {
   return x?.title ?? x?.Title ?? null;
 }
@@ -96,6 +99,7 @@ export function TeachersPage({
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
+    email: "",
     employeeNumber: "",
     title: "",
   });
@@ -103,7 +107,7 @@ export function TeachersPage({
   const showingFrom = useMemo(() => (total === 0 ? 0 : skip + 1), [skip, total]);
   const showingTo = useMemo(() => clamp(skip + items.length, 0, total), [skip, items.length, total]);
 
-  const tableColSpan = (effectiveReadOnly ? 5 : 6) + (onlyDeleted ? 1 : 0);
+  const tableColSpan = (effectiveReadOnly ? 6 : 7) + (onlyDeleted ? 1 : 0);
 
   function openEdit(t) {
     if (effectiveReadOnly) return;
@@ -113,6 +117,7 @@ export function TeachersPage({
     setForm({
       firstName: firstNameOf(t),
       lastName: lastNameOf(t),
+      email: emailOf(t),
       employeeNumber: employeeNumOf(t),
       title: String(titleNumberOf(t) ?? ""),
     });
@@ -145,6 +150,7 @@ export function TeachersPage({
         {
           firstName: form.firstName || null,
           lastName: form.lastName || null,
+          email: form.email.trim() || null,
           employeeNumber: form.employeeNumber || null,
           title: titleVal,
         },
@@ -346,6 +352,7 @@ export function TeachersPage({
                 <tr>
                   <th style={{ width: 70, textAlign: "center" }}>No.</th>
                   <th style={{ width: 160, textAlign: "left" }}>Teacher</th>
+                  <th style={{ width: 220, textAlign: "left" }}>Email</th>
                   <th style={{ width: 160, textAlign: "center" }}>Date of birth</th>
                   <th style={{ width: 160, textAlign: "center" }}>Employee number</th>
 
@@ -382,6 +389,8 @@ export function TeachersPage({
                       </td>
 
                       <td style={{ textAlign: "left" }}>{fullNameOf(t) || "-"}</td>
+
+                      <td style={{ textAlign: "left" }}>{emailOf(t) || "-"}</td>
 
                       <td className="mono" style={{ textAlign: "center", whiteSpace: "nowrap" }}>
                         {formatDate(dobOf(t))}
@@ -480,6 +489,17 @@ export function TeachersPage({
                   placeholder="Last name"
                   value={form.lastName}
                   onChange={(e) => setForm((p) => ({ ...p, lastName: e.target.value }))}
+                  disabled={saving}
+                />
+
+                <input
+                  className="input"
+                  type="email"
+                  placeholder="Email address"
+                  value={form.email}
+                  onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
+                  maxLength={254}
+                  autoComplete="email"
                   disabled={saving}
                 />
 

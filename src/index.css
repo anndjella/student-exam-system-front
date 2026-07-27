@@ -11,5 +11,6 @@
 @import "./styles/feature/subjects.css";
 @import "./styles/feature/teacher.css";
 @import "./styles/feature/auth.css";
+@import "./styles/feature/notifications.css";
 
 @import "./styles/base/responsive.css";

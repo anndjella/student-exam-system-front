@@ -1,8 +1,8 @@
 import { formatDate, formatDateTime } from "../../../utils/datetime";
 
 function formatGrade(v) {
-  if (v === null || v === undefined) return "N.I.";
-  if (typeof v === "string" && v.trim() === "") return "N.I.";
+  if (v === null || v === undefined) return "Absent";
+  if (typeof v === "string" && v.trim() === "") return "Absent";
   return v;
 }
 
@@ -49,15 +49,29 @@ export default function TeacherExamTable({ exams, showTeacher }) {
             ) : (
               list.map((e) => {
                 const id = pick(e, "id", "ID");
-                const studentFullName = pick(e, "studentFullName", "StudentFullName");
-                const studentIndexNum = pick(e, "studentIndexNum", "StudentIndexNum");
+                const studentFullName = pick(
+                  e,
+                  "studentFullName",
+                  "StudentFullName",
+                );
+                const studentIndexNum = pick(
+                  e,
+                  "studentIndexNum",
+                  "StudentIndexNum",
+                );
                 const examDate = pick(e, "examDate", "ExamDate");
                 const grade = pick(e, "grade", "Grade");
                 const note = pick(e, "note", "Note");
                 const signedAt = pick(e, "signedAt", "SignedAt");
-                const enteredByTeacherName = pick(e,"enteredByTeacherName","EnteredByTeacherName"
+                const enteredByTeacherName = pick(
+                  e,
+                  "enteredByTeacherName",
+                  "EnteredByTeacherName",
                 );
-                const enteredByEmployeeNumber = pick(e,"enteredByEmployeeNumber","EnteredByEmployeeNumber"
+                const enteredByEmployeeNumber = pick(
+                  e,
+                  "enteredByEmployeeNumber",
+                  "EnteredByEmployeeNumber",
                 );
 
                 return (

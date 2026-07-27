@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../auth/AuthContext";
+import { NotificationBell } from "../../notifications/components/NotificationBell";
 
 export function TeacherLayout() {
   const { logout, payload } = useAuth();
@@ -61,6 +62,8 @@ export function TeacherLayout() {
 
           <div className="app-brand-user">
             <span className="app-brand-sub">{payload?.uname}</span>
+
+            <NotificationBell to="/teacher/notifications" />
 
             <button
               className="logout-btn logout-btn--small"

@@ -27,13 +27,6 @@ function hasAnyRowValue(r) {
   );
 }
 
-function isValidGradeValue(grade) {
-  if (grade === "" || grade == null) return false;
-
-  const n = Number(grade);
-  return Number.isInteger(n) && n >= 6 && n <= 10;
-}
-
 function gradeChanged(r) {
   return normalizeGradeValue(r.grade) !== normalizeGradeValue(r.originalGrade);
 }
@@ -47,10 +40,6 @@ function validateRow(r) {
 
   if (!normalizeText(r.date)) {
     return `Student ${r.studentName || r.studentId}: exam date is required.`;
-  }
-
-  if (!isValidGradeValue(r.grade)) {
-    return `Student ${r.studentName || r.studentId}: grade must be an integer from 6 to 10.`;
   }
 
   if (r.hasExam && gradeChanged(r)) {
@@ -139,35 +128,40 @@ export function useGradeEntry(subjectId) {
       try {
         const data = await fetchRegistrationsForSubjectAndTerm(sid, tid, token);
 
-        const mapped = (Array.isArray(data) ? data : []).map((r) => {
-          const studentId = r.studentID ?? r.StudentID;
-          const signedAt = r.signedAt ?? r.SignedAt ?? null;
+        const mapped = (Array.isArray(data) ? data : [])
+  .map((r) => {
+    const studentId = r.studentID ?? r.StudentID;
+    const signedAt = r.signedAt ?? r.SignedAt ?? null;
 
-          const date = toInputDate(r.examDate ?? r.ExamDate ?? r.date ?? r.Date);
-          const grade =
-            (r.grade ?? r.Grade) == null ? "" : String(r.grade ?? r.Grade);
-          const note = r.note ?? r.Note ?? "";
+    const date = toInputDate(r.examDate ?? r.ExamDate ?? r.date ?? r.Date);
+    const grade =
+      (r.grade ?? r.Grade) == null ? "" : String(r.grade ?? r.Grade);
+    const note = r.note ?? r.Note ?? "";
 
-          return {
-            studentId,
-            studentName: r.studentName ?? r.StudentName ?? "",
-            studentIndex: r.studentIndexNumber ?? r.StudentIndexNumber ?? "",
+    return {
+      studentId,
+      studentName: r.studentName ?? r.StudentName ?? "",
+      studentIndex: r.studentIndexNumber ?? r.StudentIndexNumber ?? "",
 
-            hasExam: Boolean(r.hasExam ?? r.HasExam),
-            examId: r.examID ?? r.ExamID ?? r.id ?? r.ID ?? null,
+      hasExam: Boolean(r.hasExam ?? r.HasExam),
+      examId: r.examID ?? r.ExamID ?? r.id ?? r.ID ?? null,
 
-            signedAt,
-            locked: Boolean(signedAt),
+      signedAt,
+      locked: Boolean(signedAt),
 
-            date,
-            grade,
-            note,
+      date,
+      grade,
+      note,
 
-            originalDate: date,
-            originalGrade: grade,
-            originalNote: note,
-          };
-        });
+      originalDate: date,
+      originalGrade: grade,
+      originalNote: note,
+    };
+  })
+  .sort((a, b) =>
+    String(a.studentIndex || "").localeCompare(String(b.studentIndex || ""))
+  );
+
 
         setRows(mapped);
       } catch (e) {

@@ -21,6 +21,9 @@ function fullNameOf(x) {
 function indexOf(x) {
   return x?.indexNumber ?? x?.IndexNumber ?? "";
 }
+function emailOf(x) {
+  return x?.email ?? x?.Email ?? "";
+}
 function dobOf(x) {
   return x?.dateOfBirth ?? x?.DateOfBirth ?? null;
 }
@@ -105,6 +108,7 @@ export function StudentsTablePage({
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
+    email: "",
     indexNumber: "",
   });
 
@@ -112,7 +116,7 @@ export function StudentsTablePage({
   const showingTo = useMemo(() => clamp(skip + items.length, 0, total), [skip, items.length, total]);
 
   const extraCols = tab === "deleted" ? 1 : 0;
-  const tableColSpan = (showActions ? 7 : 6) + extraCols;
+  const tableColSpan = (showActions ? 8 : 7) + extraCols;
 
   function openEdit(s) {
     if (!canEdit) return;
@@ -122,6 +126,7 @@ export function StudentsTablePage({
     setForm({
       firstName: firstNameOf(s),
       lastName: lastNameOf(s),
+      email: emailOf(s),
       indexNumber: indexOf(s),
     });
     setEditOpen(true);
@@ -149,6 +154,7 @@ export function StudentsTablePage({
       await update(id, {
         firstName: form.firstName || null,
         lastName: form.lastName || null,
+        email: form.email.trim() || null,
         indexNumber: form.indexNumber || null,
       });
 
@@ -345,6 +351,7 @@ export function StudentsTablePage({
               <tr>
                 <th style={{ width: 50, textAlign: "center" }}>No.</th>
                 <th style={{ width: 150, textAlign: "left" }}>Student</th>
+                <th style={{ width: 220, textAlign: "left" }}>Email</th>
                 <th style={{ width: 150, textAlign: "center" }}>Date of birth</th>
                 <th style={{ width: 160, textAlign: "center" }}>Index number</th>
 
@@ -382,6 +389,8 @@ export function StudentsTablePage({
                     </td>
 
                     <td style={{ textAlign: "left" }}>{fullNameOf(s) || "-"}</td>
+
+                    <td style={{ textAlign: "left" }}>{emailOf(s) || "-"}</td>
 
                     <td className="mono" style={{ textAlign: "center", whiteSpace: "nowrap" }}>
                       {formatDate(dobOf(s))}
@@ -491,6 +500,17 @@ export function StudentsTablePage({
                 placeholder="Last name"
                 value={form.lastName}
                 onChange={(e) => setForm((p) => ({ ...p, lastName: e.target.value }))}
+                disabled={saving || actionLoading}
+              />
+
+              <input
+                className="input"
+                type="email"
+                placeholder="Email address"
+                value={form.email}
+                onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
+                maxLength={254}
+                autoComplete="email"
                 disabled={saving || actionLoading}
               />
 

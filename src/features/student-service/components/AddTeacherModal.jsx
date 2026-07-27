@@ -5,6 +5,7 @@ import { TEACHER_TITLE_OPTIONS } from "../../../utils/teacherTitle";
 
 const EMPLOYEE_NUMBER_REGEX = /^\d{4}\/\d{4}$/;
 const JMBG_REGEX = /^\d{13}$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function AddTeacherModal({ open, onClose, onCreated }) {
   const { token } = useAuth();
@@ -15,6 +16,7 @@ export function AddTeacherModal({ open, onClose, onCreated }) {
     jmbg: "",
     firstName: "",
     lastName: "",
+    email: "",
     employeeNumber: "",
     title: "",
   });
@@ -28,6 +30,7 @@ export function AddTeacherModal({ open, onClose, onCreated }) {
       jmbg: "",
       firstName: "",
       lastName: "",
+      email: "",
       employeeNumber: "",
       title: "",
     });
@@ -44,6 +47,7 @@ export function AddTeacherModal({ open, onClose, onCreated }) {
     const jmbg = form.jmbg.trim();
     const firstName = form.firstName.trim();
     const lastName = form.lastName.trim();
+    const email = form.email.trim();
     const employeeNumber = form.employeeNumber.trim();
     const titleVal = Number(form.title);
 
@@ -57,6 +61,10 @@ export function AddTeacherModal({ open, onClose, onCreated }) {
 
     if (!lastName) {
       return "Last name is required.";
+    }
+
+    if (!EMAIL_REGEX.test(email)) {
+      return "Enter a valid email address.";
     }
 
     if (!EMPLOYEE_NUMBER_REGEX.test(employeeNumber)) {
@@ -93,6 +101,7 @@ export function AddTeacherModal({ open, onClose, onCreated }) {
           jmbg: form.jmbg.trim(),
           firstName: form.firstName.trim(),
           lastName: form.lastName.trim(),
+          email: form.email.trim(),
           employeeNumber: form.employeeNumber.trim(),
           title: Number(form.title),
         },
@@ -173,6 +182,18 @@ export function AddTeacherModal({ open, onClose, onCreated }) {
             value={form.lastName}
             onChange={(e) => setForm((p) => ({ ...p, lastName: e.target.value }))}
             required
+            disabled={saving}
+          />
+
+          <input
+            className="input"
+            type="email"
+            placeholder="Email address"
+            value={form.email}
+            onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
+            required
+            maxLength={254}
+            autoComplete="email"
             disabled={saving}
           />
 

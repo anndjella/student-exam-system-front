@@ -5,7 +5,7 @@ import { formatDate } from "../../../utils/datetime";
 
 function formatGrade(value) {
   if (value === null || value === undefined) {
-    return "N.I.";
+    return "Absent";
   }
   return value;
 }

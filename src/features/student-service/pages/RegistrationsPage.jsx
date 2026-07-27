@@ -4,6 +4,7 @@ import { useTerms } from "../../shared/hooks/useTerms";
 import {fetchAllWithInactive} from "../api/subjectsSSApi";
 import { useSsRegistrations } from "../hooks/useSSRegistrations";
 import { formatDateTime } from "../../../utils/datetime";
+import { CustomSelect } from "../../shared/components/CustomSelect";
 
 /* helpers */
 const pick = (obj, ...keys) => {
@@ -202,22 +203,19 @@ export function RegistrationsPage() {
         <div className="filters-grid filters-grid-3">
           <div className="filter-field">
             <div className="page-subtitle filter-label">Term</div>
-            <select
-              className="input"
+            <CustomSelect
               value={regs.termId}
-              onChange={(e) => regs.setTermId(e.target.value)}
+              onChange={regs.setTermId}
               disabled={termsLoading}
-            >
-              <option value="">Select term...</option>
-              {(terms || []).map((t, idx) => {
-                const id = termIdOf(t);
-                return (
-                  <option key={termKeyOf(t, idx)} value={id ?? ""}>
-                    {termLabel(t)}
-                  </option>
-                );
-              })}
-            </select>
+              loading={termsLoading}
+              placeholder="Select term..."
+              ariaLabel="Term"
+              options={(terms || []).map((t, idx) => ({
+                key: termKeyOf(t, idx),
+                value: termIdOf(t) ?? "",
+                label: termLabel(t),
+              }))}
+            />
             {termsError ? (
               <div className="alert-error">{prettyErrorMessage(termsError)}</div>
             ) : null}
@@ -225,22 +223,19 @@ export function RegistrationsPage() {
 
           <div className="filter-field">
             <div className="page-subtitle filter-label">Subject</div>
-            <select
-              className="input"
+            <CustomSelect
               value={regs.subjectId}
-              onChange={(e) => regs.setSubjectId(e.target.value)}
+              onChange={regs.setSubjectId}
               disabled={subjectsLoading}
-            >
-              <option value="">Select subject...</option>
-              {(subjects || []).map((s, idx) => {
-                const id = subjectIdOf(s);
-                return (
-                  <option key={subjectKeyOf(s, idx)} value={id ?? ""}>
-                    {subjectLabel(s)}
-                  </option>
-                );
-              })}
-            </select>
+              loading={subjectsLoading}
+              placeholder="Select subject..."
+              ariaLabel="Subject"
+              options={(subjects || []).map((s, idx) => ({
+                key: subjectKeyOf(s, idx),
+                value: subjectIdOf(s) ?? "",
+                label: subjectLabel(s),
+              }))}
+            />
             {subjectsError ? (
               <div className="alert-error">{prettyErrorMessage(subjectsError)}</div>
             ) : null}

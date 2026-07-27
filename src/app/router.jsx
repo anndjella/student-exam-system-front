@@ -25,6 +25,7 @@ import { EnrollmentsPage } from "../features/student-service/pages/EnrollmentsPa
 import { ExamsPage} from "../features/student-service/pages/ExamsPage";
 import { RegistrationsPage} from "../features/student-service/pages/RegistrationsPage";
 import {TeacherExamsPage} from "../features/teacher/pages/TeacherExamsPage";
+import { NotificationsPage } from "../features/notifications/pages/NotificationsPage";
 
 export const router = createBrowserRouter([
   { path: "/login", element: <LoginPage /> },
@@ -63,7 +64,8 @@ export const router = createBrowserRouter([
           { path: "exams", element: <StudentExamsPage /> },
           { path: "subjects", element: <StudentSubjectsPage /> },
           { path: "registrations", element: <StudentRegistrationsPage /> },
-         { path: "me", element: <MePage /> },
+          { path: "notifications", element: <NotificationsPage /> },
+          { path: "me", element: <MePage /> },
         ],
       },
     ],
@@ -85,7 +87,8 @@ export const router = createBrowserRouter([
           { path: "students", element: <TeacherStudentsPage /> },
           { path: "subjects", element: <TeacherSubjectsPage /> },        
           { path: "exams", element: <TeacherExamsPage /> },
-         { path: "me", element: <MePage /> },
+          { path: "notifications", element: <NotificationsPage /> },
+          { path: "me", element: <MePage /> },
         ],
       },
     ],

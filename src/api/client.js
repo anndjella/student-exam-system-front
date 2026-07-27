@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
 
 export class ApiError extends Error {
   constructor(message, { status, title, detail, errorCode } = {}) {
@@ -91,25 +91,17 @@ async function extractProblem(res) {
         title: body.title || body.Title || "Validation failed",
         detail,
         errorCode:
-          body?.errorCode ||
-          body?.ErrorCode ||
-          body?.extensions?.errorCode,
+          body?.errorCode || body?.ErrorCode || body?.extensions?.errorCode,
       };
     }
 
     const title =
-      body.title ||
-      body.Title ||
-      body.message ||
-      body.Message ||
-      fallbackTitle;
+      body.title || body.Title || body.message || body.Message || fallbackTitle;
 
     const detail = body.detail || body.Detail || "";
 
     const errorCode =
-      body?.errorCode ||
-      body?.ErrorCode ||
-      body?.extensions?.errorCode;
+      body?.errorCode || body?.ErrorCode || body?.extensions?.errorCode;
 
     return { title, detail, errorCode };
   }
@@ -125,12 +117,12 @@ async function extractProblem(res) {
 async function throwApiError(res) {
   const p = await extractProblem(res);
 
- throw new ApiError(p.detail || p.title, {
-  status: res.status,
-  title: p.title,
-  detail: p.detail,
-  errorCode: p.errorCode,
-});
+  throw new ApiError(p.detail || p.title, {
+    status: res.status,
+    title: p.title,
+    detail: p.detail,
+    errorCode: p.errorCode,
+  });
 }
 
 function withAuthHeaders(options = {}, token) {

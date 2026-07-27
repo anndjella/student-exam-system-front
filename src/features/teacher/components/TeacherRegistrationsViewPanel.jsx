@@ -62,7 +62,8 @@ export function TeacherRegistrationsViewPanel({ subject }) {
           studentId: r.studentID ?? r.StudentID,
           studentName: r.studentName ?? r.StudentName ?? "",
           studentIndex: r.studentIndexNumber ?? r.StudentIndexNumber ?? "",
-        }));
+        }))
+        .sort((a, b) => String(a.studentIndex).localeCompare(String(b.studentIndex)));;
         setRows(mapped);
       } catch (e) {
         setError(e?.userMessage || e?.message || "Failed to load registrations.");

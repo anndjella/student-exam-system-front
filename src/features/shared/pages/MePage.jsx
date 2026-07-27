@@ -37,6 +37,10 @@ export function MePage() {
                   <td>{me.lastName || "-"}</td>
                 </tr>
                 <tr>
+                  <th>Email</th>
+                  <td>{me.email || "-"}</td>
+                </tr>
+                <tr>
                   <th>JMBG</th>
                   <td className="mono">{me.jmbg || "-"}</td>
                 </tr>

@@ -4,6 +4,7 @@ import { useTerms } from "../../shared/hooks/useTerms";
 import { fetchAllWithInactive } from "../api/subjectsSSApi";
 import { useSSExams } from "../hooks/useSSExams";
 import { formatDate, formatDateTime } from "../../../utils/datetime";
+import { CustomSelect } from "../../shared/components/CustomSelect";
 
 /* helpers */
 const pick = (obj, ...keys) => {
@@ -19,7 +20,9 @@ function prettyErrorMessage(message) {
 
   try {
     const obj = JSON.parse(message);
-    return obj.detail || obj.Detail || obj.title || obj.Title || "Request failed.";
+    return (
+      obj.detail || obj.Detail || obj.title || obj.Title || "Request failed."
+    );
   } catch {
     return message;
   }
@@ -52,15 +55,18 @@ function subjectLabel(s) {
 }
 
 function formatGrade(v) {
-  if (v === null || v === undefined) return "N.I.";
-  if (typeof v === "string" && v.trim() === "") return "N.I.";
+  if (v === null || v === undefined) return "Absent";
+  if (typeof v === "string" && v.trim() === "") return "Absent";
   return v;
 }
 
 function normalizeSubjectsResponse(res) {
   if (Array.isArray(res)) {
     const looksLikeSubject = res.some(
-      (x) => x && (x.code || x.Code || x.name || x.Name) && !(x.subjects || x.Subjects)
+      (x) =>
+        x &&
+        (x.code || x.Code || x.name || x.Name) &&
+        !(x.subjects || x.Subjects),
     );
     if (looksLikeSubject) return res;
 
@@ -100,7 +106,9 @@ function normalizeSubjectsResponse(res) {
     const vals = Object.values(res);
 
     const directSubjects = vals.find(
-      (v) => Array.isArray(v) && v.some((x) => x && (x.code || x.Code || x.name || x.Name))
+      (v) =>
+        Array.isArray(v) &&
+        v.some((x) => x && (x.code || x.Code || x.name || x.Name)),
     );
     if (Array.isArray(directSubjects)) return directSubjects;
 
@@ -129,11 +137,7 @@ export function ExamsPage() {
   const { token, role } = useAuth();
   const isStudentService = role === "StudentService";
 
-  const {
-    terms,
-    loading: termsLoading,
-    error: termsError,
-  } = useTerms();
+  const { terms, loading: termsLoading, error: termsError } = useTerms();
 
   const [subjects, setSubjects] = useState([]);
   const [subjectsLoading, setSubjectsLoading] = useState(false);
@@ -158,7 +162,9 @@ export function ExamsPage() {
         setSubjects(normalizeSubjectsResponse(res));
       } catch (e) {
         if (!alive) return;
-        setSubjectsError(e?.userMessage || e?.message || "Failed to load subjects.");
+        setSubjectsError(
+          e?.userMessage || e?.message || "Failed to load subjects.",
+        );
         setSubjects([]);
       } finally {
         if (!alive) return;
@@ -214,54 +220,54 @@ export function ExamsPage() {
         <div className="filters-grid filters-grid-3">
           <div className="filter-field">
             <div className="page-subtitle filter-label">Term</div>
-            <select
-              className="input"
+            <CustomSelect
               value={exams.termId}
-              onChange={(e) => exams.setTermId(e.target.value)}
+              onChange={exams.setTermId}
               disabled={termsLoading}
-            >
-              <option value="">Select term...</option>
-              {(terms || []).map((t, idx) => {
-                const id = termIdOf(t);
-                return (
-                  <option key={termKeyOf(t, idx)} value={id ?? ""}>
-                    {termLabel(t)}
-                  </option>
-                );
-              })}
-            </select>
+              loading={termsLoading}
+              placeholder="Select term..."
+              ariaLabel="Term"
+              options={(terms || []).map((t, idx) => ({
+                key: termKeyOf(t, idx),
+                value: termIdOf(t) ?? "",
+                label: termLabel(t),
+              }))}
+            />
 
             {termsError ? (
-              <div className="alert-error">{prettyErrorMessage(termsError)}</div>
+              <div className="alert-error">
+                {prettyErrorMessage(termsError)}
+              </div>
             ) : null}
           </div>
 
           <div className="filter-field">
             <div className="page-subtitle filter-label">Subject</div>
-            <select
-              className="input"
+            <CustomSelect
               value={exams.subjectId}
-              onChange={(e) => exams.setSubjectId(e.target.value)}
+              onChange={exams.setSubjectId}
               disabled={subjectsLoading}
-            >
-              <option value="">Select subject...</option>
-              {(subjects || []).map((s, idx) => {
-                const id = subjectIdOf(s);
-                return (
-                  <option key={subjectKeyOf(s, idx)} value={id ?? ""}>
-                    {subjectLabel(s)}
-                  </option>
-                );
-              })}
-            </select>
+              loading={subjectsLoading}
+              placeholder="Select subject..."
+              ariaLabel="Subject"
+              options={(subjects || []).map((s, idx) => ({
+                key: subjectKeyOf(s, idx),
+                value: subjectIdOf(s) ?? "",
+                label: subjectLabel(s),
+              }))}
+            />
 
             {subjectsError ? (
-              <div className="alert-error">{prettyErrorMessage(subjectsError)}</div>
+              <div className="alert-error">
+                {prettyErrorMessage(subjectsError)}
+              </div>
             ) : null}
           </div>
 
           <div className="filter-field">
-            <div className="page-subtitle filter-label">Student index (optional)</div>
+            <div className="page-subtitle filter-label">
+              Student index (optional)
+            </div>
             <input
               className="input"
               placeholder="e.g. 2021/1234"
@@ -339,13 +345,23 @@ export function ExamsPage() {
               <tr>
                 <th style={{ width: 60 }}>No</th>
                 <th>Student</th>
-                <th className="mono" style={{ width: 140 }}>Index</th>
-                <th className="mono" style={{ width: 140 }}>Date</th>
+                <th className="mono" style={{ width: 140 }}>
+                  Index
+                </th>
+                <th className="mono" style={{ width: 140 }}>
+                  Date
+                </th>
                 <th>Teacher</th>
-                <th className="mono" style={{ width: 140 }}>Teacher e.n.</th>
-                <th className="mono" style={{ width: 90 }}>Grade</th>
+                <th className="mono" style={{ width: 140 }}>
+                  Teacher e.n.
+                </th>
+                <th className="mono" style={{ width: 90 }}>
+                  Grade
+                </th>
                 <th>Note</th>
-                <th className="mono" style={{ width: 180 }}>SignedAt</th>
+                <th className="mono" style={{ width: 180 }}>
+                  SignedAt
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -365,13 +381,24 @@ export function ExamsPage() {
                     <tr key={rowKey}>
                       <td className="mono">{exams.skip + idx + 1}</td>
                       <td>{pick(x, "studentName", "StudentName") || "-"}</td>
-                      <td className="mono">{pick(x, "studentIndexNum", "StudentIndexNum") || "-"}</td>
-                      <td className="mono">{formatDate(pick(x, "date", "Date"))}</td>
+                      <td className="mono">
+                        {pick(x, "studentIndexNum", "StudentIndexNum") || "-"}
+                      </td>
+                      <td className="mono">
+                        {formatDate(pick(x, "date", "Date"))}
+                      </td>
                       <td>{pick(x, "teacherName", "TeacherName") || "-"}</td>
-                      <td className="mono">{pick(x, "teacherEmployeeNum", "TeacherEmployeeNum") || "-"}</td>
-                      <td className="mono">{formatGrade(pick(x, "grade", "Grade"))}</td>
+                      <td className="mono">
+                        {pick(x, "teacherEmployeeNum", "TeacherEmployeeNum") ||
+                          "-"}
+                      </td>
+                      <td className="mono">
+                        {formatGrade(pick(x, "grade", "Grade"))}
+                      </td>
                       <td>{pick(x, "note", "Note") || "-"}</td>
-                      <td className="mono">{formatDateTime(pick(x, "signedAt", "SignedAt"))}</td>
+                      <td className="mono">
+                        {formatDateTime(pick(x, "signedAt", "SignedAt"))}
+                      </td>
                     </tr>
                   );
                 })
