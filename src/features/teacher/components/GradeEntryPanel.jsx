@@ -36,12 +36,14 @@ function canEnterGradesOf(term) {
   if (!term) return false;
 
   const start = normalizeDateOnly(pick(term, "startDate", "StartDate"));
-  const end = normalizeDateOnly(pick(term, "endDate", "EndDate"));
+  const registrationEnd = normalizeDateOnly(
+    pick(term, "registrationEndDate", "RegistrationEndDate"),
+  );
 
-  if (!start || !end) return false;
+  if (!start || !registrationEnd) return false;
 
   const today = todayDateOnly();
-  return today >= start && today <= end;
+  return today >= start && today > registrationEnd;
 }
 
 export function GradeEntryPanel({ subject }) {
@@ -79,6 +81,9 @@ export function GradeEntryPanel({ subject }) {
 
   const canEnterGrades = canEnterGradesOf(effectiveTerm);
   const gradeEntryBlocked = !lockedAll && !canEnterGrades;
+  const hasFutureExam = rows.some(
+    (row) => row.hasExam && normalizeDateOnly(row.date) > todayDateOnly(),
+  );
 
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -150,12 +155,14 @@ export function GradeEntryPanel({ subject }) {
       </div>
 
       <div className="page-subtitle" style={{ marginBottom: 10 }}>
-        Choose a term, then select a student to enter grade/date/note in the side panel.
+        Choose a term, then select a student to enter grade/date/note in the
+        side panel.
       </div>
 
       {gradeEntryBlocked ? (
         <div className="page-subtitle" style={{ marginBottom: 10 }}>
-          Grade entry will be available only while today is within the selected term exam period.
+          Grade entry will be available once the selected term exam period
+          begins.
         </div>
       ) : null}
 
@@ -204,7 +211,14 @@ export function GradeEntryPanel({ subject }) {
           className="btn"
           type="button"
           onClick={lock}
-          disabled={locking || saving || lockedAll || loadingRegs || gradeEntryBlocked}
+          disabled={
+            locking ||
+            saving ||
+            lockedAll ||
+            loadingRegs ||
+            gradeEntryBlocked ||
+            hasFutureExam
+          }
         >
           {lockedAll ? "Locked" : locking ? "Locking..." : "Lock"}
         </button>
@@ -239,7 +253,14 @@ export function GradeEntryPanel({ subject }) {
             ) : (
               pagedRows.map((r) => {
                 const selected = r.studentId === selectedId;
-                const status = r.locked ? "Locked" : r.hasExam ? "Entered" : "New";
+                const hasResult = r.grade !== "" && r.grade != null;
+                const status = r.locked
+                  ? "Locked"
+                  : r.hasExam && !hasResult
+                    ? "Pending result"
+                    : r.hasExam
+                      ? "Entered"
+                      : "New";
 
                 return (
                   <tr
