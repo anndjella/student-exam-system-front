@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 function hasDateValue(dateStr) {
   return typeof dateStr === "string" && dateStr.trim().length > 0;
@@ -12,6 +12,10 @@ function todayDateOnly() {
   return `${year}-${month}-${day}`;
 }
 
+function normalizeValue(value) {
+  return String(value ?? "").trim();
+}
+
 export function GradeDrawer({
   open,
   onClose,
@@ -20,12 +24,9 @@ export function GradeDrawer({
   onChangeField,
   onSave,
   saving,
+  error,
 }) {
   const [localError, setLocalError] = useState("");
-
-  useEffect(() => {
-    setLocalError("");
-  }, [row?.studentId, open]);
 
   const title = useMemo(() => {
     if (!row) return "";
@@ -35,6 +36,15 @@ export function GradeDrawer({
   function validate() {
     if (!row) return "No row selected.";
     if (!hasDateValue(row.date)) return "Exam date is required.";
+    if (gradeWasChanged && !normalizeValue(row.note)) {
+      return "Enter a note explaining the grade change.";
+    }
+    if (
+      gradeWasChanged &&
+      normalizeValue(row.note) === normalizeValue(row.originalNote)
+    ) {
+      return "Update the note to explain the grade change.";
+    }
     return "";
   }
 
@@ -52,6 +62,10 @@ export function GradeDrawer({
 
   const gradeDisabled =
     disabled || !hasDateValue(row?.date) || row.date > todayDateOnly();
+  const gradeWasChanged =
+    Boolean(row?.hasExam) &&
+    normalizeValue(row?.grade) !== normalizeValue(row?.originalGrade);
+  const displayedError = localError || error;
 
   return (
     <div
@@ -74,8 +88,8 @@ export function GradeDrawer({
 
         {row ? (
           <div className="drawer-body">
-            {localError ? (
-              <div className="alert-error">{localError}</div>
+            {displayedError ? (
+              <div className="alert-error">{displayedError}</div>
             ) : null}
 
             <div className="form-grid">
@@ -85,9 +99,10 @@ export function GradeDrawer({
                   className="input"
                   type="date"
                   value={row.date || ""}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    setLocalError("");
                     onChangeField(row.studentId, { date: e.target.value })
-                  }
+                  }}
                   disabled={disabled || row.hasExam}
                 />
               </label>
@@ -97,9 +112,10 @@ export function GradeDrawer({
                 <input
                   className="input"
                   value={row.grade ?? ""}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    setLocalError("");
                     onChangeField(row.studentId, { grade: e.target.value })
-                  }
+                  }}
                   disabled={gradeDisabled}
                   inputMode="numeric"
                   placeholder="-"
@@ -107,15 +123,22 @@ export function GradeDrawer({
               </label>
 
               <label className="form-field form-field--full">
-                <span>Note</span>
+                <span>{gradeWasChanged ? "Note (required)" : "Note"}</span>
                 <textarea
                   className="input textarea"
                   value={row.note || ""}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    setLocalError("");
                     onChangeField(row.studentId, { note: e.target.value })
-                  }
+                  }}
                   disabled={disabled}
-                  placeholder="Optional note..."
+                  required={gradeWasChanged}
+                  aria-required={gradeWasChanged}
+                  placeholder={
+                    gradeWasChanged
+                      ? "Explain why the grade was changed..."
+                      : "Optional note..."
+                  }
                 />
               </label>
             </div>
