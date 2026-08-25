@@ -42,7 +42,9 @@ export function formatDate(value, opts = {}) {
 export function formatLocalDateTime(value) {
   if (!value) return "-";
 
-  const date = new Date(value);
+  const text = String(value).trim();
+  const hasTimeZone = /([zZ]|[+\-]\d{2}:\d{2})$/.test(text);
+  const date = new Date(hasTimeZone ? text : `${text}Z`);
   if (Number.isNaN(date.getTime())) return "-";
 
   return date

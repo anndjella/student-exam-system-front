@@ -4,6 +4,14 @@ function hasDateValue(dateStr) {
   return typeof dateStr === "string" && dateStr.trim().length > 0;
 }
 
+function todayDateOnly() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export function GradeDrawer({
   open,
   onClose,
@@ -42,10 +50,16 @@ export function GradeDrawer({
 
   if (!open) return null;
 
+  const gradeDisabled =
+    disabled || !hasDateValue(row?.date) || row.date > todayDateOnly();
+
   return (
-    <div className="drawer-backdrop" onMouseDown={(e) => {
-      if (e.target === e.currentTarget) onClose?.();
-    }}>
+    <div
+      className="drawer-backdrop"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose?.();
+      }}
+    >
       <aside className="drawer" role="dialog" aria-modal="true">
         <div className="drawer-head">
           <div>
@@ -60,7 +74,9 @@ export function GradeDrawer({
 
         {row ? (
           <div className="drawer-body">
-            {localError ? <div className="alert-error">{localError}</div> : null}
+            {localError ? (
+              <div className="alert-error">{localError}</div>
+            ) : null}
 
             <div className="form-grid">
               <label className="form-field">
@@ -69,7 +85,9 @@ export function GradeDrawer({
                   className="input"
                   type="date"
                   value={row.date || ""}
-                  onChange={(e) => onChangeField(row.studentId, { date: e.target.value })}
+                  onChange={(e) =>
+                    onChangeField(row.studentId, { date: e.target.value })
+                  }
                   disabled={disabled || row.hasExam}
                 />
               </label>
@@ -79,8 +97,10 @@ export function GradeDrawer({
                 <input
                   className="input"
                   value={row.grade ?? ""}
-                  onChange={(e) => onChangeField(row.studentId, { grade: e.target.value })}
-                  disabled={disabled}
+                  onChange={(e) =>
+                    onChangeField(row.studentId, { grade: e.target.value })
+                  }
+                  disabled={gradeDisabled}
                   inputMode="numeric"
                   placeholder="-"
                 />
@@ -91,7 +111,9 @@ export function GradeDrawer({
                 <textarea
                   className="input textarea"
                   value={row.note || ""}
-                  onChange={(e) => onChangeField(row.studentId, { note: e.target.value })}
+                  onChange={(e) =>
+                    onChangeField(row.studentId, { note: e.target.value })
+                  }
                   disabled={disabled}
                   placeholder="Optional note..."
                 />
@@ -105,7 +127,12 @@ export function GradeDrawer({
         )}
 
         <div className="drawer-foot">
-          <button className="btn btn-primary" type="button" onClick={handleSave} disabled={disabled || saving || !row}>
+          <button
+            className="btn btn-primary"
+            type="button"
+            onClick={handleSave}
+            disabled={disabled || saving || !row}
+          >
             {saving ? "Saving..." : "Save"}
           </button>
         </div>
