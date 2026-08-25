@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useGradeEntry } from "../hooks/useGradeEntry";
 import { GradeDrawer } from "./GradeDrawer";
 
@@ -53,6 +53,7 @@ export function GradeEntryPanel({ subject }) {
     setTermId,
     rows,
     updateRow,
+    resetRow,
     saveOne,
     lock,
     loadingTerms,
@@ -60,6 +61,7 @@ export function GradeEntryPanel({ subject }) {
     saving,
     locking,
     error,
+    clearError,
     stats,
   } = useGradeEntry(subject?.id);
 
@@ -108,12 +110,6 @@ export function GradeEntryPanel({ subject }) {
 
   const pageSafe = Math.min(page, totalPages);
 
-  useEffect(() => {
-    if (page > totalPages) {
-      setPage(totalPages);
-    }
-  }, [page, totalPages]);
-
   const pagedRows = useMemo(() => {
     const start = (pageSafe - 1) * pageSize;
     return filtered.slice(start, start + pageSize);
@@ -122,12 +118,6 @@ export function GradeEntryPanel({ subject }) {
   const selectedRow = useMemo(() => {
     if (!selectedId) return null;
     return rows.find((r) => r.studentId === selectedId) || null;
-  }, [rows, selectedId]);
-
-  useEffect(() => {
-    if (selectedId && !rows.some((r) => r.studentId === selectedId)) {
-      setSelectedId(null);
-    }
   }, [rows, selectedId]);
 
   function isRowDisabled(r) {
@@ -141,10 +131,15 @@ export function GradeEntryPanel({ subject }) {
   }
 
   function onRowClick(r) {
+    clearError();
     setSelectedId(r.studentId);
   }
 
   function closeDrawer() {
+    if (selectedId) {
+      resetRow(selectedId);
+    }
+    clearError();
     setSelectedId(null);
   }
 
@@ -166,7 +161,7 @@ export function GradeEntryPanel({ subject }) {
         </div>
       ) : null}
 
-      {error ? (
+      {error && !selectedRow ? (
         <div className="alert-error" style={{ marginBottom: 10 }}>
           {error}
         </div>
@@ -289,6 +284,7 @@ export function GradeEntryPanel({ subject }) {
       </div>
 
       <GradeDrawer
+        key={selectedRow?.studentId ?? "closed"}
         open={Boolean(selectedRow)}
         onClose={closeDrawer}
         row={selectedRow}
@@ -296,6 +292,7 @@ export function GradeEntryPanel({ subject }) {
         onChangeField={(studentId, patch) => updateRow(studentId, patch)}
         onSave={onSaveSelected}
         saving={saving}
+        error={error}
       />
 
       {lockedAll ? (

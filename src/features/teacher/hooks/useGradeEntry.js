@@ -47,22 +47,22 @@ function validateRow(r) {
   if (!hasAnyRowValue(r)) return "";
 
   if (!normalizeText(r.date)) {
-    return `Student ${r.studentName || r.studentId}: exam date is required.`;
+    return "Exam date is required.";
   }
 
   if (normalizeGradeValue(r.grade) !== "" && r.date > todayDateOnly()) {
-    return `Student ${r.studentName || r.studentId}: a grade cannot be entered before the exam date.`;
+    return "A grade cannot be entered before the exam date.";
   }
 
   if (r.hasExam && gradeChanged(r)) {
     const note = normalizeText(r.note);
 
     if (!note) {
-      return `Student ${r.studentName || r.studentId}: if you change the grade, you must enter a new note.`;
+      return "Enter a note explaining the grade change.";
     }
 
     if (!noteChanged(r)) {
-      return `Student ${r.studentName || r.studentId}: if you change the grade, the note must also be updated.`;
+      return "Update the note to explain the grade change.";
     }
   }
 
@@ -220,8 +220,25 @@ export function useGradeEntry(subjectId) {
   }
 
   function updateRow(studentId, patch) {
+    setError("");
     setRows((cur) =>
       cur.map((r) => (r.studentId === studentId ? { ...r, ...patch } : r)),
+    );
+  }
+
+  function resetRow(studentId) {
+    setError("");
+    setRows((cur) =>
+      cur.map((r) =>
+        r.studentId === studentId
+          ? {
+              ...r,
+              date: r.originalDate,
+              grade: r.originalGrade,
+              note: r.originalNote,
+            }
+          : r,
+      ),
     );
   }
 
@@ -337,6 +354,7 @@ export function useGradeEntry(subjectId) {
     rows,
     setAllDates,
     updateRow,
+    resetRow,
     saveOne,
     saveAll,
     lock,
@@ -345,6 +363,7 @@ export function useGradeEntry(subjectId) {
     saving,
     locking,
     error,
+    clearError: () => setError(""),
     stats,
     reloadRegistrations: () => loadRegistrations(subjectId, termId),
   };
