@@ -19,11 +19,13 @@ function CheckIcon() {
 export function CustomSelect({
   value,
   onChange,
-  options,
+  options = [],
   placeholder,
   disabled = false,
   loading = false,
   ariaLabel,
+  className = "",
+  showOptionCount = true,
 }) {
   const listboxId = useId();
   const rootRef = useRef(null);
@@ -36,6 +38,7 @@ export function CustomSelect({
     selectedIndex >= 0 ? selectedIndex : 0
   );
   const selectedOption = selectedIndex >= 0 ? options[selectedIndex] : null;
+  const unavailable = disabled || loading || options.length === 0;
 
   useEffect(() => {
     if (!open) return undefined;
@@ -75,7 +78,7 @@ export function CustomSelect({
   }
 
   function handleKeyDown(event) {
-    if (disabled || loading || options.length === 0) return;
+    if (unavailable) return;
 
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       event.preventDefault();
@@ -108,8 +111,8 @@ export function CustomSelect({
 
   return (
     <div
-      className={`custom-select${open ? " is-open" : ""}${
-        disabled || loading ? " is-disabled" : ""
+      className={`custom-select${className ? ` ${className}` : ""}${open ? " is-open" : ""}${
+        unavailable ? " is-disabled" : ""
       }`}
       ref={rootRef}
     >
@@ -122,7 +125,7 @@ export function CustomSelect({
         aria-expanded={open}
         aria-haspopup="listbox"
         aria-activedescendant={open ? `${listboxId}-${activeIndex}` : undefined}
-        disabled={disabled || loading}
+        disabled={unavailable}
         onClick={() => {
           if (open) setOpen(false);
           else openMenu();
@@ -170,9 +173,11 @@ export function CustomSelect({
               );
             })}
           </div>
-          <div className="custom-select-menu-footer">
-            {options.length} {options.length === 1 ? "option" : "options"}
-          </div>
+          {showOptionCount ? (
+            <div className="custom-select-menu-footer">
+              {options.length} {options.length === 1 ? "option" : "options"}
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>

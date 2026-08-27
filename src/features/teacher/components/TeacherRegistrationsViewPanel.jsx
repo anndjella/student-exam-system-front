@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../../auth/AuthContext";
+import { CustomSelect } from "../../shared/components/CustomSelect";
 import { fetchTermsForGrading } from "../api/termsApi";
 import { fetchRegistrationsForSubjectAndTerm } from "../api/registrationsApi";
 
@@ -94,19 +95,20 @@ export function TeacherRegistrationsViewPanel({ subject }) {
       ) : null}
 
       <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginBottom: 12 }}>
-        <select
-          className="input"
-          style={{ width: 320 }}
+        <CustomSelect
+          className="grade-toolbar-select"
           value={termId || ""}
-          onChange={(e) => setTermId(Number(e.target.value))}
+          onChange={(value) => setTermId(Number(value))}
           disabled={loadingTerms}
-        >
-          {(terms || []).map((t) => (
-            <option key={t.termID ?? t.id} value={t.termID ?? t.id}>
-              {termLabel(t)}
-            </option>
-          ))}
-        </select>
+          loading={loadingTerms}
+          placeholder="Select term..."
+          ariaLabel="Term"
+          options={(terms || []).map((term) => ({
+            key: term.termID ?? term.id,
+            value: term.termID ?? term.id,
+            label: termLabel(term),
+          }))}
+        />
 
         <div style={{ flex: 1 }} />
 

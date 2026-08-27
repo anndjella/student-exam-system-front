@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../../../auth/AuthContext";
 import { createTeacher } from "../api/teachersSSApi";
 import { TEACHER_TITLE_OPTIONS } from "../../../utils/teacherTitle";
+import { CustomSelect } from "../../shared/components/CustomSelect";
 
 const EMPLOYEE_NUMBER_REGEX = /^\d{4}\/\d{4}$/;
 const JMBG_REGEX = /^\d{13}$/;
@@ -206,23 +207,18 @@ export function AddTeacherModal({ open, onClose, onCreated }) {
             disabled={saving}
           />
 
-          <select
-            className="input"
+          <CustomSelect
             value={form.title}
-            onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
-            required
+            onChange={(value) => setForm((p) => ({ ...p, title: value }))}
             disabled={saving}
-          >
-            <option value="" disabled>
-              Select title...
-            </option>
-
-            {TEACHER_TITLE_OPTIONS.map((o) => (
-              <option key={o.value} value={String(o.value)}>
-                {o.label}
-              </option>
-            ))}
-          </select>
+            placeholder="Select title..."
+            ariaLabel="Academic title"
+            options={TEACHER_TITLE_OPTIONS.map((option) => ({
+              key: option.value,
+              value: String(option.value),
+              label: option.label,
+            }))}
+          />
 
           <button className="btn btn-primary" disabled={saving}>
             {saving ? "Saving..." : "Create"}

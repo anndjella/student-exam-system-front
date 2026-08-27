@@ -5,6 +5,7 @@ import { listTeachers, updateTeacher, deleteTeacher } from "../api/teachersSSApi
 import { AddTeacherModal } from "../components/AddTeacherModal";
 import { formatDate, formatDateTime } from "../../../utils/datetime";
 import { TEACHER_TITLE_OPTIONS } from "../../../utils/teacherTitle";
+import { CustomSelect } from "../../shared/components/CustomSelect";
 
 /* helpers */
 function idOf(x) {
@@ -323,17 +324,15 @@ export function TeachersPage({
                 }}
               >
                 <span style={{ whiteSpace: "nowrap" }}>Page size:</span>
-                <select
-                  className="input"
-                  style={{ width: 92, padding: "6px 8px" }}
+                <CustomSelect
+                  className="custom-select--compact"
                   value={take}
-                  onChange={(e) => setTake(Number(e.target.value))}
+                  onChange={(value) => setTake(Number(value))}
                   disabled={loading}
-                >
-                  <option value={10}>10</option>
-                  <option value={20}>20</option>
-                  <option value={50}>50</option>
-                </select>
+                  ariaLabel="Page size"
+                  showOptionCount={false}
+                  options={[10, 20, 50].map((value) => ({ value, label: String(value) }))}
+                />
               </div>
             </div>
           </div>
@@ -511,22 +510,18 @@ export function TeachersPage({
                   disabled={saving}
                 />
 
-                <select
-                  className="input"
+                <CustomSelect
                   value={form.title}
-                  onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
-                  required
+                  onChange={(value) => setForm((p) => ({ ...p, title: value }))}
                   disabled={saving}
-                >
-                  <option value="" disabled>
-                    Select title...
-                  </option>
-                  {TEACHER_TITLE_OPTIONS.map((o) => (
-                    <option key={o.value} value={String(o.value)}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
+                  placeholder="Select title..."
+                  ariaLabel="Academic title"
+                  options={TEACHER_TITLE_OPTIONS.map((option) => ({
+                    key: option.value,
+                    value: String(option.value),
+                    label: option.label,
+                  }))}
+                />
 
                 <button className="btn btn-primary" disabled={saving}>
                   {saving ? "Saving..." : "Save changes"}

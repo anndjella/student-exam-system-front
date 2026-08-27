@@ -255,17 +255,12 @@
 // }
 import { useMemo, useState } from "react";
 import { useStudentRegistrations } from "../hooks/useStudentRegistrations";
+import { CustomSelect } from "../../shared/components/CustomSelect";
 
 /* helpers */
 
 function subjectIdOf(s) {
   return s.id ?? s.subjectID ?? s.subjectId;
-}
-
-function subjectLabel(s) {
-  const code = s.code ?? "-";
-  const name = s.name ?? "";
-  return `${code}${name ? " · " + name : ""}`;
 }
 
 function teacherNames(teachers) {
@@ -361,24 +356,20 @@ export function StudentRegistrationsPage() {
           <div style={{ fontWeight: 900 }}>Create registration</div>
           <div style={{ flex: 1 }} />
 
-          <select
-            className="input"
-            style={{ width: 320 }}
+          <CustomSelect
+            className="grade-toolbar-select"
             value={selectedTermId || ""}
-            onChange={e => setSelectedTermId(Number(e.target.value))}
+            onChange={(value) => setSelectedTermId(Number(value))}
             disabled={loading || (terms || []).length === 0}
-            title="Select an open term"
-          >
-            {(terms || []).length === 0 ? (
-              <option value="">No open terms</option>
-            ) : (
-              (terms || []).map(t => (
-                <option key={termIdOf(t)} value={termIdOf(t)}>
-                  {termLabel(t)}
-                </option>
-              ))
-            )}
-          </select>
+            loading={loading}
+            placeholder={(terms || []).length ? "Select an open term..." : "No open terms"}
+            ariaLabel="Open term"
+            options={(terms || []).map((term) => ({
+              key: termIdOf(term),
+              value: termIdOf(term),
+              label: termLabel(term),
+            }))}
+          />
 
           <input
             className="input"

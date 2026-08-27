@@ -23,6 +23,24 @@
   min-width: 0;
 }
 
+.custom-select--compact {
+  width: 92px;
+  min-width: 92px;
+}
+
+.custom-select--compact .custom-select-trigger {
+  height: 40px;
+  padding-left: 12px;
+}
+
+.custom-select--compact .custom-select-menu {
+  min-width: 100%;
+}
+
+.custom-select--compact .custom-select-menu-label {
+  display: none;
+}
+
 .custom-select-trigger {
   width: 100%;
   height: 42px;
@@ -242,7 +260,7 @@
   min-width: 0;
 }
 
-.form-field span {
+.form-field > span {
   color: var(--muted);
 }
 
