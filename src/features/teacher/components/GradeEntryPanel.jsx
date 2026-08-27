@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { CustomSelect } from "../../shared/components/CustomSelect";
 import { useGradeEntry } from "../hooks/useGradeEntry";
 import { GradeDrawer } from "./GradeDrawer";
 
@@ -168,22 +169,24 @@ export function GradeEntryPanel({ subject }) {
       ) : null}
 
       <div className="toolbar">
-        <select
-          className="input grade-toolbar-select"
+        <CustomSelect
+          className="grade-toolbar-select"
           value={termId || termIdOf(effectiveTerm) || ""}
-          onChange={(e) => {
-            setTermId(Number(e.target.value));
+          onChange={(value) => {
+            setTermId(Number(value));
             setPage(1);
             setSelectedId(null);
           }}
           disabled={loadingTerms}
-        >
-          {termOptions.map((t) => (
-            <option key={termIdOf(t) || termLabel(t)} value={termIdOf(t) || ""}>
-              {termLabel(t)}
-            </option>
-          ))}
-        </select>
+          loading={loadingTerms}
+          placeholder="Select term..."
+          ariaLabel="Term"
+          options={termOptions.map((term) => ({
+            key: termIdOf(term) || termLabel(term),
+            value: termIdOf(term) || "",
+            label: termLabel(term),
+          }))}
+        />
 
         <input
           className="input grade-toolbar-select"

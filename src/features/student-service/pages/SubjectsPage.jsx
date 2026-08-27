@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSsSubjects } from "../hooks/useSSSubjects";
 import { EditSubjectTeachersModal } from "../components/EditSubjectTeachersModal";
 import { useAuth } from "../../../auth/AuthContext";
+import { CustomSelect } from "../../shared/components/CustomSelect";
 
 import {
   createTeachingAssignment,
@@ -413,20 +414,19 @@ export function StudentServiceSubjectsPage() {
           <div className="subjects-pager-controls">
             <span className="subjects-page-size-label">Page size:</span>
 
-            <select
-              className="input subjects-page-size-select"
+            <CustomSelect
+              className="custom-select--compact subjects-page-size-select"
               value={take}
-              onChange={(e) => {
-                setTake(Number(e.target.value));
+              onChange={(value) => {
+                setTake(Number(value));
                 setSuccessMessage("");
                 setFormError("");
               }}
               disabled={loading}
-            >
-              <option value={10}>10</option>
-              <option value={20}>20</option>
-              <option value={50}>50</option>
-            </select>
+              ariaLabel="Page size"
+              showOptionCount={false}
+              options={[10, 20, 50].map((value) => ({ value, label: String(value) }))}
+            />
 
             <button className="btn" onClick={goPrev} disabled={!canPrev || loading}>
               Prev

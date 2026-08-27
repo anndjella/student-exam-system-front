@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { CustomSelect } from "../../shared/components/CustomSelect";
 import TeacherExamTable from "../components/TeacherExamTable";
 import { useTeacherExamsPage } from "../hooks/useTeacherExams";
 
@@ -80,48 +81,38 @@ export function TeacherExamsPage() {
         >
           <div className="form-field">
             <span>Subject</span>
-            <select
-              className="input"
+            <CustomSelect
               value={subjectId}
-              onChange={(e) => setSubjectId(e.target.value)}
+              onChange={setSubjectId}
               disabled={loadingInit}
-            >
-              <option value="">Select subject</option>
-              {allSubjects.map((s) => {
+              loading={loadingInit}
+              placeholder="Select subject..."
+              ariaLabel="Subject"
+              options={allSubjects.map((s) => {
                 const id = s?.subjectID ?? s?.id;
                 const label = s?.code
                   ? `${s.code} · ${s.name}`
                   : s?.name ?? `#${id}`;
-
-                return (
-                  <option key={id} value={String(id)}>
-                    {label}
-                  </option>
-                );
+                return { key: id, value: String(id), label };
               })}
-            </select>
+            />
           </div>
 
           <div className="form-field">
             <span>Term</span>
-            <select
-              className="input"
+            <CustomSelect
               value={termId}
-              onChange={(e) => setTermId(e.target.value)}
+              onChange={setTermId}
               disabled={loadingInit}
-            >
-              <option value="">Select term</option>
-              {terms.map((t) => {
+              loading={loadingInit}
+              placeholder="Select term..."
+              ariaLabel="Term"
+              options={terms.map((t) => {
                 const id = t?.termID ?? t?.id;
                 const label = t?.name ?? t?.termName ?? `Term ${id}`;
-
-                return (
-                  <option key={id} value={String(id)}>
-                    {label}
-                  </option>
-                );
+                return { key: id, value: String(id), label };
               })}
-            </select>
+            />
           </div>
 
           <div style={{ display: "flex", alignItems: "end" }}>

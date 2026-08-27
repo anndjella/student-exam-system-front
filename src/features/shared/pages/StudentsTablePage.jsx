@@ -3,6 +3,7 @@ import { useAuth } from "../../../auth/AuthContext";
 import { usePagedQuery } from "../hooks/usePagedQuery";
 import { useStudentsApi } from "../hooks/useStudentsApi";
 import { formatDate, formatDateTime } from "../../../utils/datetime";
+import { CustomSelect } from "../components/CustomSelect";
 
 /* ---------- small helpers ---------- */
 function idOf(x) {
@@ -322,17 +323,15 @@ export function StudentsTablePage({
               }}
             >
               <span style={{ whiteSpace: "nowrap" }}>Page size:</span>
-              <select
-                className="input"
-                style={{ width: 92, padding: "6px 8px" }}
+              <CustomSelect
+                className="custom-select--compact"
                 value={take}
-                onChange={(e) => setTake(Number(e.target.value))}
+                onChange={(value) => setTake(Number(value))}
                 disabled={loading || actionLoading}
-              >
-                <option value={10}>10</option>
-                <option value={20}>20</option>
-                <option value={50}>50</option>
-              </select>
+                ariaLabel="Page size"
+                showOptionCount={false}
+                options={[10, 20, 50].map((value) => ({ value, label: String(value) }))}
+              />
             </div>
           </div>
         </div>

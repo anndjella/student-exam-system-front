@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { CustomSelect } from "../../shared/components/CustomSelect";
 
 function clamp(n, min, max) {
   return Math.max(min, Math.min(max, n));
@@ -87,16 +88,15 @@ export function DataTablePage({
 
             <div className="dt-pagesize">
               <span className="dt-pagesize__label">Page size:</span>
-              <select
-                className="input dt-pagesize__select"
+              <CustomSelect
+                className="custom-select--compact dt-pagesize__select"
                 value={take}
-                onChange={(e) => setTake(Number(e.target.value))}
+                onChange={(value) => setTake(Number(value))}
                 disabled={loading}
-              >
-                <option value={10}>10</option>
-                <option value={20}>20</option>
-                <option value={50}>50</option>
-              </select>
+                ariaLabel="Page size"
+                showOptionCount={false}
+                options={[10, 20, 50].map((value) => ({ value, label: String(value) }))}
+              />
             </div>
           </div>
         </div>
