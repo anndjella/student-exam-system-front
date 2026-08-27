@@ -5,7 +5,7 @@ export function formatDateTime(value, opts = {}) {
 
   const s = String(value).trim();
 
-  const hasTz = /([zZ]|[+\-]\d{2}:\d{2})$/.test(s);
+  const hasTz = /([zZ]|[+-]\d{2}:\d{2})$/.test(s);
   const iso = hasTz ? s : s + "Z";
 
   const d = new Date(iso);
@@ -25,7 +25,7 @@ export function formatDate(value, opts = {}) {
   if (!value) return "-";
 
   const s = String(value).trim();
-  const hasTz = /([zZ]|[+\-]\d{2}:\d{2})$/.test(s);
+  const hasTz = /([zZ]|[+-]\d{2}:\d{2})$/.test(s);
   const iso = hasTz ? s : s + "Z";
 
   const d = new Date(iso);
@@ -43,7 +43,7 @@ export function formatLocalDateTime(value) {
   if (!value) return "-";
 
   const text = String(value).trim();
-  const hasTimeZone = /([zZ]|[+\-]\d{2}:\d{2})$/.test(text);
+  const hasTimeZone = /([zZ]|[+-]\d{2}:\d{2})$/.test(text);
   const date = new Date(hasTimeZone ? text : `${text}Z`);
   if (Number.isNaN(date.getTime())) return "-";
 

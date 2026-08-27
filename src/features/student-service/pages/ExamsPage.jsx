@@ -167,8 +167,7 @@ export function ExamsPage() {
         );
         setSubjects([]);
       } finally {
-        if (!alive) return;
-        setSubjectsLoading(false);
+        if (alive) setSubjectsLoading(false);
       }
     }
 

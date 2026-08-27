@@ -151,8 +151,7 @@ export function RegistrationsPage() {
         setSubjectsError(e?.userMessage || e?.message || "Failed to load subjects.");
         setSubjects([]);
       } finally {
-        if (!alive) return;
-        setSubjectsLoading(false);
+        if (alive) setSubjectsLoading(false);
       }
     }
 

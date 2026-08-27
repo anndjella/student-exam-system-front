@@ -1,4 +1,4 @@
-import { formatDate, formatDateTime } from "../../../utils/datetime";
+import { formatDateTime } from "../../../utils/datetime";
 
 function formatGrade(v) {
   if (v === null || v === undefined) return "Absent";
