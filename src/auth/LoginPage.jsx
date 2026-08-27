@@ -87,6 +87,7 @@ export function LoginPage() {
               type="button"
               className="auth-input-btn"
               onClick={() => setShowPassword((s) => !s)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? "Hide" : "Show"}
             </button>
