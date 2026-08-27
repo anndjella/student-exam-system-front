@@ -249,8 +249,7 @@ export function EnrollmentsPage() {
         setItemsAll([]);
         setTotalAll(0);
       } finally {
-        if (!alive) return;
-        setLoadingAll(false);
+        if (alive) setLoadingAll(false);
       }
     }
 
@@ -362,8 +361,7 @@ export function EnrollmentsPage() {
         setSubjectsError(e?.userMessage || e?.message || "Failed to load subjects.");
         setActiveSubjects([]);
       } finally {
-        if (!alive) return;
-        setLoadingSubjects(false);
+        if (alive) setLoadingSubjects(false);
       }
     }
 

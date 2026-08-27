@@ -1,6 +1,5 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "./AuthContext";
-import { use } from "react";
 
 export function ProtectedRoute({ children, allowWhenMustChangePassword = false }) {
   const { isLoggedIn, mustChangePassword } = useAuth();

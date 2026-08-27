@@ -23,7 +23,14 @@ export default defineConfig([
       },
     },
     rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      'no-unused-vars': [
+        'error',
+        { varsIgnorePattern: '^[A-Z_]', ignoreRestSiblings: true },
+      ],
+      // Resetting local state in an effect when a prop (e.g. modal `open`,
+      // route path) changes is an intentional pattern here; keep it visible
+      // as a warning without failing the build.
+      'react-hooks/set-state-in-effect': 'warn',
     },
   },
 ])
